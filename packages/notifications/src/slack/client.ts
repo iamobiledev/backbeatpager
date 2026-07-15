@@ -50,15 +50,17 @@ function retryAfterMilliseconds(
     statusCode === 429 ||
     slackError === "ratelimited";
 
-  if (!rateLimited && statusCode !== undefined && statusCode !== 500) {
-    return null;
+  if (rateLimited) {
+    const retryAfterSeconds =
+      typeof retryAfter === "number" && Number.isFinite(retryAfter)
+        ? retryAfter
+        : 2 ** attempt;
+    return Math.max(250, retryAfterSeconds * 1000);
   }
-
-  const retryAfterSeconds =
-    typeof retryAfter === "number" && Number.isFinite(retryAfter)
-      ? retryAfter
-      : 2 ** attempt;
-  return Math.max(250, retryAfterSeconds * 1000);
+  if (typeof statusCode === "number" && statusCode >= 500 && statusCode < 600) {
+    return 2 ** attempt * 1000;
+  }
+  return null;
 }
 
 export async function withSlackRetry<T>(

@@ -33,4 +33,16 @@ describe("Slack API retry policy", () => {
     });
     expect(operation).toHaveBeenCalledOnce();
   });
+
+  it("does not retry Slack platform errors such as invalid_auth", async () => {
+    const operation = vi.fn<() => Promise<string>>().mockRejectedValue({
+      code: "slack_webapi_platform_error",
+      data: { error: "invalid_auth", ok: false }
+    });
+
+    await expect(withSlackRetry(operation)).rejects.toMatchObject({
+      data: { error: "invalid_auth" }
+    });
+    expect(operation).toHaveBeenCalledOnce();
+  });
 });

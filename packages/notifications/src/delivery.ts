@@ -111,9 +111,18 @@ async function deliveryContext(
   incidentId: string
 ): Promise<DeliveryContext> {
   const incident = await loadIncident(prisma, incidentId);
-  const assigneeSlackUserId = incident.assignee
-    ? await mapSlackUser(prisma, dependencies.slack, incident.assignee)
-    : null;
+  let assigneeSlackUserId: string | null = null;
+  if (incident.assignee) {
+    try {
+      assigneeSlackUserId = await mapSlackUser(
+        prisma,
+        dependencies.slack,
+        incident.assignee
+      );
+    } catch {
+      // The actual page attempt records mapping/provider failures per target.
+    }
+  }
 
   return {
     incident,
