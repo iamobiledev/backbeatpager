@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@backbeat/db": "workspace:*",
     "@js-temporal/polyfill": "^0.5.1"
   }
 }

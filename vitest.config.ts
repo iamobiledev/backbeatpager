@@ -11,6 +11,7 @@ export default defineConfig({
       "packages/**/*.test.ts",
       "tests/**/*.test.ts"
     ],
+    fileParallelism: false,
     passWithNoTests: true,
     restoreMocks: true
   }
