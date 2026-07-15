@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 .next/
+.output/
 .vercel/
 coverage/
 dist/
