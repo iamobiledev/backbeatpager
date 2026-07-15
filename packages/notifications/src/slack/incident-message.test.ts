@@ -18,6 +18,7 @@ const incident: IncidentMessageModel = {
   sourceUrl: "https://grafana.example.com/alerts/42",
   state: "TRIGGERED",
   summary: "Payment authorization failures",
+  version: 3,
   webUrl: "https://pager.example.com/incidents/42"
 };
 
@@ -26,14 +27,16 @@ describe("Slack action tokens", () => {
     const token = createSlackActionToken(
       {
         action: "acknowledge",
-        incidentId: incident.incidentId
+        incidentId: incident.incidentId,
+        version: incident.version
       },
       secret
     );
 
     expect(verifySlackActionToken(token, secret)).toEqual({
       action: "acknowledge",
-      incidentId: incident.incidentId
+      incidentId: incident.incidentId,
+      version: incident.version
     });
     expect(verifySlackActionToken(`${token}x`, secret)).toBeNull();
     expect(verifySlackActionToken(token, "wrong-secret")).toBeNull();

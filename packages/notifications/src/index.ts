@@ -37,3 +37,11 @@ export type {
   SlackMessageReference,
   SlackRetryOptions
 } from "./slack/client.js";
+export {
+  deliverIncidentGeneration,
+  synchronizeIncidentMessages
+} from "./delivery.js";
+export type {
+  IncidentDeliveryResult,
+  NotificationDeliveryDependencies
+} from "./delivery.js";

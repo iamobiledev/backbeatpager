@@ -3,11 +3,11 @@ import {
   AlertAction,
   AlertStatus,
   IncidentState,
+  Severity,
   TimelineEventType,
   type Incident,
   type Prisma,
-  type PrismaClient,
-  type Severity
+  type PrismaClient
 } from "@backbeat/db";
 
 import {
@@ -337,6 +337,13 @@ export async function triggerIncident(
     }
 
     const policy = await escalationPolicy(transaction, input.serviceId);
+    const serviceConfiguration = await transaction.service.findUniqueOrThrow({
+      where: { id: input.serviceId },
+      select: {
+        autoCreateIncidentChannel: true,
+        criticalChannelThresholdMinutes: true
+      }
+    });
     const first = firstEscalationStep(policy.steps);
     const targets = first.exhausted
       ? []
@@ -354,6 +361,15 @@ export async function triggerIncident(
           ? null
           : deadlineFor(first.step, now),
         escalationGeneration: generation,
+        incidentChannelDeadline:
+          input.severity === Severity.CRITICAL &&
+          serviceConfiguration.autoCreateIncidentChannel &&
+          serviceConfiguration.criticalChannelThresholdMinutes
+            ? new Date(
+                now.getTime() +
+                  serviceConfiguration.criticalChannelThresholdMinutes * 60_000
+              )
+            : null,
         serviceId: input.serviceId,
         severity: input.severity,
         source: input.source,
@@ -474,6 +490,7 @@ export async function acknowledgeIncident(
         acknowledgedAt: current.acknowledgedAt ?? now,
         escalationDeadline: null,
         escalationGeneration: generation,
+        incidentChannelDeadline: null,
         nagDeadline: null,
         nagGeneration: { increment: 1 },
         snoozedUntil: null,
@@ -554,6 +571,7 @@ export async function resolveIncident(
         acknowledgementExpiresAt: null,
         escalationDeadline: null,
         escalationGeneration: generation,
+        incidentChannelDeadline: null,
         nagDeadline: null,
         nagGeneration: { increment: 1 },
         resolvedAt: now,
@@ -696,6 +714,11 @@ export async function snoozeIncident(
       data: {
         escalationDeadline: snoozedUntil,
         escalationGeneration: generation,
+        incidentChannelDeadline:
+          current.incidentChannelDeadline &&
+          current.incidentChannelDeadline < snoozedUntil
+            ? snoozedUntil
+            : current.incidentChannelDeadline,
         nagDeadline: snoozedUntil,
         nagGeneration: { increment: 1 },
         snoozedUntil,

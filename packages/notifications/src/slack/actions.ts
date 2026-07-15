@@ -13,6 +13,7 @@ export type SlackIncidentAction = (typeof slackIncidentActions)[number];
 export interface SlackActionPayload {
   action: SlackIncidentAction;
   incidentId: string;
+  version: number;
 }
 
 function signature(payload: string, secret: string): string {
@@ -57,6 +58,10 @@ export function verifySlackActionToken(
       typeof value.incidentId !== "string" ||
       !("action" in value) ||
       typeof value.action !== "string" ||
+      !("version" in value) ||
+      typeof value.version !== "number" ||
+      !Number.isInteger(value.version) ||
+      value.version < 0 ||
       !slackIncidentActions.includes(value.action as SlackIncidentAction)
     ) {
       return null;
@@ -64,7 +69,8 @@ export function verifySlackActionToken(
 
     return {
       action: value.action as SlackIncidentAction,
-      incidentId: value.incidentId
+      incidentId: value.incidentId,
+      version: value.version
     };
   } catch {
     return null;

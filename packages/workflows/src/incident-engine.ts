@@ -102,22 +102,35 @@ export async function evaluateIncidentWake(
     };
   }
 
-  if (!incident.escalationDeadline) {
+  const deadlines = [
+    incident.escalationDeadline,
+    incident.nagDeadline,
+    incident.incidentChannelDeadline
+  ].filter((deadline): deadline is Date => deadline !== null);
+  if (deadlines.length === 0) {
     await updateRun(prisma, input, WorkflowStatus.SUCCEEDED, null);
     return { done: true, nextGeneration: null, sleepUntil: null };
   }
 
-  if (incident.escalationDeadline > now) {
-    await updateRun(
-      prisma,
-      input,
-      WorkflowStatus.SLEEPING,
-      incident.escalationDeadline
-    );
+  const nextDeadline = deadlines.reduce((earliest, deadline) =>
+    deadline < earliest ? deadline : earliest
+  );
+  if (nextDeadline > now) {
+    await updateRun(prisma, input, WorkflowStatus.SLEEPING, nextDeadline);
     return {
       done: false,
       nextGeneration: null,
-      sleepUntil: incident.escalationDeadline.toISOString()
+      sleepUntil: nextDeadline.toISOString()
+    };
+  }
+
+  if (!incident.escalationDeadline || incident.escalationDeadline > now) {
+    const retryAt = new Date(now.getTime() + 5_000);
+    await updateRun(prisma, input, WorkflowStatus.SLEEPING, retryAt);
+    return {
+      done: false,
+      nextGeneration: null,
+      sleepUntil: retryAt.toISOString()
     };
   }
 

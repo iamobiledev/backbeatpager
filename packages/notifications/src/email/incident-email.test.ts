@@ -13,6 +13,7 @@ const incident = {
   source: "alertmanager",
   state: "TRIGGERED" as const,
   summary: "Elevated checkout latency",
+  version: 1,
   webUrl: "https://pager.example.com/incidents/42"
 };
 

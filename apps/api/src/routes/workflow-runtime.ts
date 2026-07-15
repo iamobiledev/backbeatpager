@@ -3,11 +3,16 @@ import {
   evaluateIncidentWake,
   type IncidentWorkflowStarter
 } from "@backbeat/workflows";
+import {
+  deliverIncidentGeneration,
+  type NotificationDeliveryDependencies
+} from "@backbeat/notifications";
 import type { PrismaClient } from "@backbeat/db";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 export interface WorkflowRuntimeRouteDependencies {
+  notificationDelivery?: NotificationDeliveryDependencies;
   prisma: PrismaClient;
   workflowStarter: IncidentWorkflowStarter;
 }
@@ -48,6 +53,15 @@ export function registerWorkflowRuntimeRoutes(
           message: parsed.error.issues[0]?.message ?? "Invalid workflow input"
         }
       });
+    }
+
+    if (dependencies.notificationDelivery) {
+      await deliverIncidentGeneration(
+        dependencies.prisma,
+        dependencies.notificationDelivery,
+        parsed.data.incidentId,
+        parsed.data.generation
+      );
     }
 
     const result = await evaluateIncidentWake(dependencies.prisma, parsed.data);

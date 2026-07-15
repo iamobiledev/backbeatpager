@@ -448,6 +448,7 @@ model Incident {
   acknowledgementExpiresAt DateTime?               @db.Timestamptz(3)
   incidentSlackChannelId   String?
   incidentStatusMessageTs  String?
+  incidentChannelDeadline  DateTime?               @db.Timestamptz(3)
   openedAt                 DateTime                @default(now()) @db.Timestamptz(3)
   acknowledgedAt           DateTime?               @db.Timestamptz(3)
   resolvedAt               DateTime?               @db.Timestamptz(3)
@@ -467,6 +468,7 @@ model Incident {
   @@index([assigneeId, state])
   @@index([escalationDeadline])
   @@index([nagDeadline])
+  @@index([incidentChannelDeadline])
 }
 
 model IncidentAlert {

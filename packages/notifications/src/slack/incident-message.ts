@@ -23,6 +23,7 @@ export interface IncidentMessageModel {
   sourceUrl?: string;
   state: IncidentMessageState;
   summary: string;
+  version: number;
   webUrl?: string;
 }
 
@@ -75,6 +76,7 @@ function stateLabel(state: IncidentMessageState): string {
 function actionButton(
   action: SlackIncidentAction,
   incidentId: string,
+  version: number,
   secret: string,
   text: string,
   style?: "danger" | "primary"
@@ -88,7 +90,7 @@ function actionButton(
       type: "plain_text"
     },
     type: "button",
-    value: createSlackActionToken({ action, incidentId }, secret)
+    value: createSlackActionToken({ action, incidentId, version }, secret)
   };
 }
 
@@ -104,6 +106,7 @@ function actionBlock(
       actionButton(
         "acknowledge",
         model.incidentId,
+        model.version,
         actionSecret,
         "Acknowledge",
         "primary"
@@ -114,16 +117,35 @@ function actionBlock(
     actionButton(
       "resolve",
       model.incidentId,
+      model.version,
       actionSecret,
       "Resolve",
       "danger"
     ),
-    actionButton("escalate", model.incidentId, actionSecret, "Escalate"),
-    actionButton("reassign", model.incidentId, actionSecret, "Reassign")
+    actionButton(
+      "escalate",
+      model.incidentId,
+      model.version,
+      actionSecret,
+      "Escalate"
+    ),
+    actionButton(
+      "reassign",
+      model.incidentId,
+      model.version,
+      actionSecret,
+      "Reassign"
+    )
   );
   if (model.state === "TRIGGERED") {
     elements.push(
-      actionButton("snooze", model.incidentId, actionSecret, "Snooze 15m")
+      actionButton(
+        "snooze",
+        model.incidentId,
+        model.version,
+        actionSecret,
+        "Snooze 15m"
+      )
     );
   }
 
