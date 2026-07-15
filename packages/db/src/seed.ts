@@ -33,14 +33,14 @@ async function seed(): Promise<void> {
       email: "alice@example.com",
       name: "Alice Oncall",
       role: UserRole.RESPONDER,
-      slackUserId: process.env.DEMO_ALICE_SLACK_USER_ID ?? null,
+      slackUserId: process.env.DEMO_ALICE_SLACK_USER_ID || null,
       timezone: "America/New_York"
     },
     update: {
       active: true,
       name: "Alice Oncall",
       role: UserRole.RESPONDER,
-      slackUserId: process.env.DEMO_ALICE_SLACK_USER_ID ?? null,
+      slackUserId: process.env.DEMO_ALICE_SLACK_USER_ID || null,
       timezone: "America/New_York"
     }
   });
@@ -51,14 +51,14 @@ async function seed(): Promise<void> {
       email: "bob@example.com",
       name: "Bob Backup",
       role: UserRole.RESPONDER,
-      slackUserId: process.env.DEMO_BOB_SLACK_USER_ID ?? null,
+      slackUserId: process.env.DEMO_BOB_SLACK_USER_ID || null,
       timezone: "America/Los_Angeles"
     },
     update: {
       active: true,
       name: "Bob Backup",
       role: UserRole.RESPONDER,
-      slackUserId: process.env.DEMO_BOB_SLACK_USER_ID ?? null,
+      slackUserId: process.env.DEMO_BOB_SLACK_USER_ID || null,
       timezone: "America/Los_Angeles"
     }
   });
@@ -69,14 +69,14 @@ async function seed(): Promise<void> {
       name: "Payments",
       slug: "payments",
       description: "Demo payments engineering team",
-      slackChannelId: process.env.DEMO_PAYMENTS_SLACK_CHANNEL_ID ?? null,
+      slackChannelId: process.env.DEMO_PAYMENTS_SLACK_CHANNEL_ID || null,
       timezone: "UTC"
     },
     update: {
       active: true,
       description: "Demo payments engineering team",
       name: "Payments",
-      slackChannelId: process.env.DEMO_PAYMENTS_SLACK_CHANNEL_ID ?? null,
+      slackChannelId: process.env.DEMO_PAYMENTS_SLACK_CHANNEL_ID || null,
       timezone: "UTC"
     }
   });

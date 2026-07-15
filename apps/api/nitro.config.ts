@@ -2,6 +2,7 @@ import { defineNitroConfig } from "nitro/config";
 
 export default defineNitroConfig({
   modules: ["workflow/nitro"],
+  preset: process.env.NITRO_PRESET ?? "vercel",
   routes: {
     "/**": {
       format: "node",
