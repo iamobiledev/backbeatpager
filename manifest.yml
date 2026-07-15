@@ -15,12 +15,12 @@ features:
     - command: /oncall
       description: Show current on-call engineers or create an override
       usage_hint: "[team|schedule|override]"
-      url: https://YOUR_API_DOMAIN/slack/events
+      url: https://YOUR_APP_DOMAIN/slack/events
       should_escape: false
     - command: /incident
       description: List, trigger, acknowledge, or resolve incidents
       usage_hint: "list|trigger|ack <id>|resolve <id>"
-      url: https://YOUR_API_DOMAIN/slack/events
+      url: https://YOUR_APP_DOMAIN/slack/events
       should_escape: false
 
 oauth_config:
@@ -43,12 +43,12 @@ oauth_config:
 
 settings:
   event_subscriptions:
-    request_url: https://YOUR_API_DOMAIN/slack/events
+    request_url: https://YOUR_APP_DOMAIN/slack/events
     bot_events:
       - app_home_opened
   interactivity:
     is_enabled: true
-    request_url: https://YOUR_API_DOMAIN/slack/events
+    request_url: https://YOUR_APP_DOMAIN/slack/events
   org_deploy_enabled: false
   socket_mode_enabled: false
   token_rotation_enabled: false

@@ -108,21 +108,45 @@ importers:
 
   apps/web:
     dependencies:
-      '@auth/prisma-adapter':
-        specifier: ^2.11.2
-        version: 2.11.2(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(magicast@0.5.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3))
       '@backbeat/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@backbeat/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@backbeat/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@backbeat/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@backbeat/notifications':
+        specifier: workspace:*
+        version: link:../../packages/notifications
       '@backbeat/workflows':
         specifier: workspace:*
         version: link:../../packages/workflows
+      '@fastify/helmet':
+        specifier: ^13.1.0
+        version: 13.1.0
+      '@opentelemetry/api':
+        specifier: ^1.9.1
+        version: 1.9.1
+      '@slack/bolt':
+        specifier: ^4.7.3
+        version: 4.7.3(@types/express@5.0.6)
+      '@slack/types':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@slack/web-api':
+        specifier: ^8.0.0
+        version: 8.0.0
+      '@vercel/slack-bolt':
+        specifier: ^1.6.0
+        version: 1.6.0(@aws-sdk/credential-provider-web-identity@3.972.49)(@slack/bolt@4.7.3(@types/express@5.0.6))(ws@8.21.1)
+      fastify:
+        specifier: ^5.10.0
+        version: 5.10.0
       lucide-react:
         specifier: ^1.24.0
         version: 1.24.0(react@19.2.7)
@@ -138,6 +162,9 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+      workflow:
+        specifier: ^4.6.0
+        version: 4.6.0(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@opentelemetry/api@1.9.1)(@swc/cli@0.8.1(@swc/core@1.15.3)(chokidar@5.0.0))(@swc/core@1.15.3)(magicast@0.5.3)(next@16.2.10(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(typescript@6.0.3)(ws@8.21.1)
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -279,11 +306,6 @@ packages:
         optional: true
       nodemailer:
         optional: true
-
-  '@auth/prisma-adapter@2.11.2':
-    resolution: {integrity: sha512-GyNEUNtrPgDPs0M4xX6F5i7jTsCKwU6BXV9zutctcoo6K1Ud+juckrmQS11uyNgeWsw6sliextHbU/e+8lsizQ==}
-    peerDependencies:
-      '@prisma/client': '>=2.26.0 || >=3 || >=4 || >=5 || >=6'
 
   '@aws-sdk/core@3.975.2':
     resolution: {integrity: sha512-iyeXwziyjJpixq5OmhsIyrSWx8vwcI7gDo4yRUC3EP7NQtOo9iAJiIEc3G+/HkhtNXqOhofiCK7Lc34Sq+fJWg==}
@@ -4915,15 +4937,6 @@ snapshots:
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
 
-  '@auth/prisma-adapter@2.11.2(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(magicast@0.5.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3))':
-    dependencies:
-      '@auth/core': 0.41.2
-      '@prisma/client': 7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(magicast@0.5.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3)
-    transitivePeerDependencies:
-      - '@simplewebauthn/browser'
-      - '@simplewebauthn/server'
-      - nodemailer
-
   '@aws-sdk/core@3.975.2':
     dependencies:
       '@aws-sdk/types': 3.974.1
@@ -6396,7 +6409,7 @@ snapshots:
     dependencies:
       async-listen: 3.0.0
       open: 8.4.0
-      xdg-app-paths: 5.1.0
+      xdg-app-paths: 5.5.1
       zod: 4.1.11
 
   '@vercel/cli-config@0.2.0':

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { emailIsAllowed } from "./auth-policy.js";
 
-describe("Google email policy", () => {
+describe("console email policy", () => {
   it("allows the configured Workspace domain case-insensitively", () => {
     expect(
       emailIsAllowed("Alice@Example.COM", {

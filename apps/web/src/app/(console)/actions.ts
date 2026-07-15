@@ -352,10 +352,12 @@ export async function toggleEntityAction(form: FormData): Promise<void> {
 }
 
 async function requestWorkflowReconciliation(): Promise<void> {
-  const apiBaseUrl = process.env.API_BASE_URL;
+  const appBaseUrl =
+    process.env.WEB_BASE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
   const cronSecret = process.env.CRON_SECRET;
-  if (!apiBaseUrl || !cronSecret) return;
-  await fetch(`${apiBaseUrl.replace(/\/$/, "")}/internal/reconcile`, {
+  if (!appBaseUrl || !cronSecret) return;
+  await fetch(`${appBaseUrl.replace(/\/$/, "")}/internal/reconcile`, {
     headers: { authorization: `Bearer ${cronSecret}` },
     method: "POST"
   });

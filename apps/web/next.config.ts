@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -21,7 +22,18 @@ const nextConfig: NextConfig = {
     ];
   },
   poweredByHeader: false,
-  reactStrictMode: true
+  reactStrictMode: true,
+  serverExternalPackages: [
+    "@prisma/client",
+    "@prisma/adapter-neon",
+    "@prisma/adapter-pg",
+    "@neondatabase/serverless",
+    "pg",
+    "@slack/bolt",
+    "@slack/web-api",
+    "fastify",
+    "@fastify/helmet"
+  ]
 };
 
-export default nextConfig;
+export default withWorkflow(nextConfig);

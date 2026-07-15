@@ -1,24 +1,33 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { parseWebEnvironment } from "@backbeat/config";
 import { getPrismaClient } from "@backbeat/db";
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
+import { z } from "zod";
 
 import { emailIsAllowed } from "@/lib/auth-policy";
+import { parseAppEnvironment } from "@backbeat/config";
 
 if (process.env.VERCEL_ENV === "production") {
-  parseWebEnvironment(process.env);
+  parseAppEnvironment(process.env);
 }
 
 const prisma = getPrismaClient();
 
+const credentialsSchema = z.object({
+  email: z.email(),
+  password: z.string().min(1)
+});
+
 export const { auth, handlers, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
   callbacks: {
     authorized({ auth: session, request }) {
       const path = request.nextUrl.pathname;
       if (
         path.startsWith("/api/auth") ||
+        path.startsWith("/api/v1") ||
+        path.startsWith("/slack") ||
+        path.startsWith("/internal") ||
+        path === "/health" ||
+        path === "/ready" ||
         path === "/login" ||
         path.startsWith("/_next")
       ) {
@@ -32,47 +41,29 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       }
       return Boolean(session?.user);
     },
-    async session({ session, user }) {
-      const appUser = await prisma.user.findUnique({
-        where: { id: user.id }
-      });
-      if (appUser) {
-        session.user.id = appUser.id;
-        session.user.role = appUser.role;
-        session.user.timezone = appUser.timezone;
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.sub = user.id;
+        const appUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true, timezone: true }
+        });
+        if (appUser) {
+          token.role = appUser.role;
+          token.timezone = appUser.timezone;
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
+        session.user.role =
+          (token.role as "ADMIN" | "RESPONDER" | undefined) ?? "RESPONDER";
+        session.user.timezone =
+          typeof token.timezone === "string" ? token.timezone : "UTC";
       }
       return session;
-    },
-    async signIn({ profile, user }) {
-      const email = user.email?.trim().toLowerCase();
-      if (
-        !email ||
-        !emailIsAllowed(email, {
-          ...(process.env.AUTH_GOOGLE_ALLOWED_DOMAIN
-            ? { allowedDomain: process.env.AUTH_GOOGLE_ALLOWED_DOMAIN }
-            : {}),
-          ...(process.env.AUTH_ALLOWED_EMAILS
-            ? { allowedEmails: process.env.AUTH_ALLOWED_EMAILS }
-            : {})
-        })
-      ) {
-        return false;
-      }
-      if (
-        profile &&
-        "email_verified" in profile &&
-        profile.email_verified !== true
-      ) {
-        return false;
-      }
-
-      const appUser = await prisma.user.findFirst({
-        where: {
-          active: true,
-          email: { equals: email, mode: "insensitive" }
-        }
-      });
-      return Boolean(appUser);
     }
   },
   pages: {
@@ -80,12 +71,54 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     signIn: "/login"
   },
   providers: [
-    Google({
-      allowDangerousEmailAccountLinking: true
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(rawCredentials) {
+        const parsed = credentialsSchema.safeParse(rawCredentials);
+        if (!parsed.success) return null;
+
+        const email = parsed.data.email.trim().toLowerCase();
+        const expectedPassword = process.env.AUTH_LOGIN_PASSWORD;
+        if (!expectedPassword || parsed.data.password !== expectedPassword) {
+          return null;
+        }
+
+        if (
+          !emailIsAllowed(email, {
+            ...(process.env.AUTH_ALLOWED_DOMAIN
+              ? { allowedDomain: process.env.AUTH_ALLOWED_DOMAIN }
+              : {}),
+            ...(process.env.AUTH_ALLOWED_EMAILS
+              ? { allowedEmails: process.env.AUTH_ALLOWED_EMAILS }
+              : {})
+          })
+        ) {
+          return null;
+        }
+
+        const appUser = await prisma.user.findFirst({
+          where: {
+            active: true,
+            email: { equals: email, mode: "insensitive" }
+          }
+        });
+        if (!appUser) return null;
+
+        return {
+          email: appUser.email,
+          id: appUser.id,
+          name: appUser.name,
+          role: appUser.role,
+          timezone: appUser.timezone
+        };
+      }
     })
   ],
   session: {
-    strategy: "database"
+    strategy: "jwt"
   },
   trustHost: true
 });

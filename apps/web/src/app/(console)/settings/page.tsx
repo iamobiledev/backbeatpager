@@ -36,16 +36,16 @@ export default async function SettingsPage() {
           <p className="text-xs text-slate-600">Credentials</p>
           <div className="mt-2">
             <Badge tone={slackConfigured ? "emerald" : "amber"}>
-              {slackConfigured ? "configured in this project" : "API-owned"}
+              {slackConfigured ? "configured" : "not configured"}
             </Badge>
           </div>
         </Card>
         <Card>
           <p className="text-xs text-slate-600">Callback</p>
           <p className="mt-2 truncate font-mono text-xs text-slate-300">
-            {process.env.API_BASE_URL
-              ? `${process.env.API_BASE_URL}/slack/events`
-              : "Set API_BASE_URL"}
+            {process.env.WEB_BASE_URL
+              ? `${process.env.WEB_BASE_URL}/slack/events`
+              : "Set WEB_BASE_URL"}
           </p>
         </Card>
       </div>

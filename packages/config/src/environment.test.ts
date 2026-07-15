@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseApiEnvironment, parseWebEnvironment } from "./index.js";
+import {
+  parseApiEnvironment,
+  parseAppEnvironment,
+  parseWebEnvironment
+} from "./index.js";
 
 const database = {
   DATABASE_URL: "postgresql://user:password@example.com/database",
@@ -13,9 +17,9 @@ describe("production environment contracts", () => {
     expect(() =>
       parseApiEnvironment({
         ...database,
-        API_BASE_URL: "https://api.example.com",
         CRON_SECRET: "c".repeat(32),
         SLACK_REQUIRED: "true",
+        WEB_BASE_URL: "https://pager.example.com",
         WORKFLOW_INTERNAL_SECRET: "w".repeat(32)
       })
     ).toThrow();
@@ -23,7 +27,6 @@ describe("production environment contracts", () => {
     expect(
       parseApiEnvironment({
         ...database,
-        API_BASE_URL: "https://api.example.com",
         CRON_SECRET: "c".repeat(32),
         EMAIL_FROM: "Pager <pager@example.com>",
         RESEND_API_KEY: "re_test",
@@ -31,35 +34,34 @@ describe("production environment contracts", () => {
         SLACK_BOT_TOKEN: "xoxb-test",
         SLACK_REQUIRED: "true",
         SLACK_SIGNING_SECRET: "signing",
+        WEB_BASE_URL: "https://pager.example.com",
         WORKFLOW_INTERNAL_SECRET: "w".repeat(32)
       }).SLACK_REQUIRED
     ).toBe("true");
   });
 
-  it("requires an Auth.js domain or allowlist", () => {
+  it("requires an email allowlist or domain and login password", () => {
     expect(() =>
-      parseWebEnvironment({
+      parseAppEnvironment({
         ...database,
-        API_BASE_URL: "https://api.example.com",
-        AUTH_GOOGLE_ID: "google-id",
-        AUTH_GOOGLE_SECRET: "google-secret",
+        AUTH_LOGIN_PASSWORD: "password123",
         AUTH_SECRET: "a".repeat(32),
         CRON_SECRET: "c".repeat(32),
-        WEB_BASE_URL: "https://pager.example.com"
+        WEB_BASE_URL: "https://pager.example.com",
+        WORKFLOW_INTERNAL_SECRET: "w".repeat(32)
       })
     ).toThrow();
 
     expect(
       parseWebEnvironment({
         ...database,
-        API_BASE_URL: "https://api.example.com",
-        AUTH_GOOGLE_ALLOWED_DOMAIN: "example.com",
-        AUTH_GOOGLE_ID: "google-id",
-        AUTH_GOOGLE_SECRET: "google-secret",
+        AUTH_ALLOWED_DOMAIN: "example.com",
+        AUTH_LOGIN_PASSWORD: "password123",
         AUTH_SECRET: "a".repeat(32),
         CRON_SECRET: "c".repeat(32),
-        WEB_BASE_URL: "https://pager.example.com"
-      }).AUTH_GOOGLE_ALLOWED_DOMAIN
+        WEB_BASE_URL: "https://pager.example.com",
+        WORKFLOW_INTERNAL_SECRET: "w".repeat(32)
+      }).AUTH_ALLOWED_DOMAIN
     ).toBe("example.com");
   });
 });

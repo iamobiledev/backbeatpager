@@ -12,22 +12,21 @@ internal engineering teams.
 
 | Area               | Technology                              |
 | ------------------ | --------------------------------------- |
-| Admin UI           | Next.js App Router, React, Tailwind CSS |
-| API                | Fastify on Vercel Fluid Compute         |
-| Database           | PostgreSQL on Neon                      |
-| ORM and migrations | Prisma                                  |
-| Durable execution  | Vercel Workflows                        |
-| Slack              | Bolt for JavaScript over HTTP           |
-| Email              | Resend                                  |
-| Authentication     | Google OIDC with Auth.js (Phase 5)      |
+| App                | Next.js App Router on Vercel Fluid Compute |
+| Database           | PostgreSQL on Neon                         |
+| ORM and migrations | Prisma                                     |
+| Durable execution  | Vercel Workflows                           |
+| Slack              | Bolt for JavaScript over HTTP              |
+| Email              | Resend                                     |
+| Authentication     | Email + shared console password (Auth.js)  |
 
-The repository deploys as two Vercel projects:
+The repository deploys as **one Vercel project** (`apps/web`): the admin UI,
+alert ingestion API, Slack receiver, Workflows, and cron all share the same
+origin. PostgreSQL on Neon is the source of truth; durable workflow state is
+orchestration metadata.
 
-- `apps/api` — Fastify API, Slack HTTP receiver, and Workflow definitions.
-- `apps/web` — Next.js administration UI.
-
-Both projects use one Neon database. PostgreSQL is the source of truth; durable
-workflow state is orchestration metadata.
+`apps/api` remains in the tree as a legacy Fastify entrypoint for local/tests,
+but production runs entirely through Next.js.
 
 ## Repository layout
 
