@@ -25,6 +25,7 @@ export interface ProcessSlackActionInput {
   client: SlackActorClient;
   receiptKey: string;
   reassignSlackUserId?: string;
+  resolutionNote?: string;
   slackUserId: string;
 }
 
@@ -141,6 +142,7 @@ export async function processSlackIncidentAction(
                 userId: actor.id
               },
               idempotencyKey,
+              ...(input.resolutionNote ? { note: input.resolutionNote } : {}),
               reference
             })
           : action.action === "escalate"

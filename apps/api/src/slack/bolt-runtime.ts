@@ -15,6 +15,10 @@ import {
   SlackActionError,
   type SlackActionDependencies
 } from "./actions.js";
+import {
+  publishAppHomeForSlackUser,
+  registerPhase4Listeners
+} from "./phase4-listeners.js";
 
 export interface SlackBoltRuntime {
   handler: VercelHandler;
@@ -74,6 +78,7 @@ export function createSlackBoltRuntime(
   input: {
     botToken: string;
     signingSecret: string;
+    webBaseUrl?: string;
   } & SlackActionDependencies
 ): SlackBoltRuntime {
   const receiver = new VercelReceiver({
@@ -113,6 +118,12 @@ export function createSlackBoltRuntime(
           result.duplicate
             ? "That action was already processed."
             : "Incident updated."
+        );
+        await publishAppHomeForSlackUser(
+          input.prisma,
+          args.client,
+          args.body.user.id,
+          input.webBaseUrl
         );
       } catch (error) {
         args.logger.error(error);
@@ -196,10 +207,18 @@ export function createSlackBoltRuntime(
         reassignSlackUserId: selected,
         slackUserId: args.body.user.id
       });
+      await publishAppHomeForSlackUser(
+        input.prisma,
+        args.client,
+        args.body.user.id,
+        input.webBaseUrl
+      );
     } catch (error) {
       args.logger.error(error);
     }
   });
+
+  registerPhase4Listeners(app, input);
 
   return {
     handler: createHandler(app, receiver)
@@ -226,6 +245,9 @@ export function createSlackBoltRuntimeFromEnvironment(
     ...dependencies,
     actionSecret,
     botToken,
-    signingSecret
+    signingSecret,
+    ...(process.env.WEB_BASE_URL
+      ? { webBaseUrl: process.env.WEB_BASE_URL }
+      : {})
   });
 }
