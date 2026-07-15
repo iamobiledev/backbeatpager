@@ -51,7 +51,7 @@ function walk(dir) {
 let patched = 0;
 for (const configPath of walk(functionsRoot)) {
   const config = JSON.parse(readFileSync(configPath, "utf8"));
-  config.env = { ...env, ...config.env };
+  config.environment = { ...env, ...config.environment };
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
   patched += 1;
 }
