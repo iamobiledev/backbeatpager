@@ -2,7 +2,10 @@
   "name": "@backbeat/web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
+    "prebuild": "pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build",
+    "predev": "pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build",
     "build": "next build",
     "dev": "next dev",
     "start": "next start",

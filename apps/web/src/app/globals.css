@@ -18,3 +18,9 @@ body {
   background: #070b12;
   color: #e8edf5;
 }
+
+/* Keep muted admin text above WCAG AA contrast on dark cards. */
+.text-slate-500,
+.text-slate-600 {
+  color: #94a3b8;
+}

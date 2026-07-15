@@ -3,23 +3,7 @@ import { getPrismaClient } from "@backbeat/db";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-function configuredEmails(): Set<string> {
-  return new Set(
-    (process.env.AUTH_ALLOWED_EMAILS ?? "")
-      .split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean)
-  );
-}
-
-function emailIsAllowed(email: string): boolean {
-  const normalized = email.toLowerCase();
-  const allowedDomain = process.env.AUTH_GOOGLE_ALLOWED_DOMAIN?.toLowerCase();
-  const explicitlyAllowed = configuredEmails();
-
-  if (explicitlyAllowed.has(normalized)) return true;
-  return allowedDomain ? normalized.endsWith(`@${allowedDomain}`) : false;
-}
+import { emailIsAllowed } from "@/lib/auth-policy";
 
 const prisma = getPrismaClient();
 
@@ -56,7 +40,19 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
     async signIn({ profile, user }) {
       const email = user.email?.trim().toLowerCase();
-      if (!email || !emailIsAllowed(email)) return false;
+      if (
+        !email ||
+        !emailIsAllowed(email, {
+          ...(process.env.AUTH_GOOGLE_ALLOWED_DOMAIN
+            ? { allowedDomain: process.env.AUTH_GOOGLE_ALLOWED_DOMAIN }
+            : {}),
+          ...(process.env.AUTH_ALLOWED_EMAILS
+            ? { allowedEmails: process.env.AUTH_ALLOWED_EMAILS }
+            : {})
+        })
+      ) {
+        return false;
+      }
       if (
         profile &&
         "email_verified" in profile &&

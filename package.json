@@ -14,8 +14,9 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.json && tsc --noEmit -p tests/integration/tsconfig.json && pnpm -r --if-present typecheck",
+    "typecheck": "tsc --noEmit -p scripts/tsconfig.json && tsc --noEmit -p tests/tsconfig.json && tsc --noEmit -p tests/integration/tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && pnpm -r --if-present typecheck",
     "db:generate": "pnpm --filter @backbeat/db db:generate",
     "db:migrate:deploy": "pnpm --filter @backbeat/db db:migrate:deploy",
     "db:migrate:dev": "pnpm --filter @backbeat/db db:migrate:dev",
@@ -24,7 +25,9 @@
     "demo:alert": "tsx scripts/demo-alert.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.7.0",

@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "pnpm --filter @backbeat/contracts build && pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build && pnpm --filter @backbeat/workflows build && pnpm --filter @backbeat/notifications build",
+    "predev": "pnpm --filter @backbeat/contracts build && pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build && pnpm --filter @backbeat/workflows build && pnpm --filter @backbeat/notifications build",
     "build": "nitro build",
     "dev": "nitro dev --port 3001",
     "start": "node .output/server/index.mjs",

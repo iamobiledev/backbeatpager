@@ -149,6 +149,20 @@ export function localDateTimeToInstant(
   );
 }
 
+export function localHandoffToDate(
+  localDate: string,
+  localTime: string,
+  timezone: string
+): Date {
+  return toDate(
+    localDateTimeToInstant(
+      Temporal.PlainDate.from(localDate),
+      Temporal.PlainTime.from(localTime),
+      timezone
+    )
+  );
+}
+
 function isLayerActive(layer: ScheduleLayerSnapshot, at: Date): boolean {
   return (
     (!layer.activeFrom || layer.activeFrom.getTime() <= at.getTime()) &&

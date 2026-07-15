@@ -2,6 +2,7 @@ export {
   findNextScheduleChange,
   listShifts,
   localDateTimeToInstant,
+  localHandoffToDate,
   resolveLayerAt,
   resolveScheduleAt
 } from "./schedules/resolve.js";

@@ -6,11 +6,11 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "default": "./dist/index.js"
     },
     "./routing-keys": {
       "types": "./src/routing-keys.ts",
-      "default": "./src/routing-keys.ts"
+      "default": "./dist/routing-keys.js"
     }
   },
   "scripts": {
