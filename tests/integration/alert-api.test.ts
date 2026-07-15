@@ -187,6 +187,38 @@ describeDatabase("alert ingestion API", () => {
     ).resolves.toBe(1);
   });
 
+  it("serializes concurrent triggers into one incident and one Workflow", async () => {
+    const startsBefore = workflowStarts.length;
+    const responses = await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        app.inject({
+          headers: { "x-idempotency-key": `concurrent-event-${index}` },
+          method: "POST",
+          url: "/api/v1/alerts",
+          payload: event("concurrent-dedup")
+        })
+      )
+    );
+
+    expect(responses.every((response) => response.statusCode === 202)).toBe(
+      true
+    );
+    expect(
+      new Set(
+        responses.map(
+          (response) =>
+            response.json<{ incident: { id: string } }>().incident.id
+        )
+      ).size
+    ).toBe(1);
+    await expect(
+      prisma.incident.count({
+        where: { dedupKey: "concurrent-dedup", serviceId }
+      })
+    ).resolves.toBe(1);
+    expect(workflowStarts.length - startsBefore).toBe(1);
+  });
+
   it("acknowledges and resolves through events while updating the alert", async () => {
     await app.inject({
       method: "POST",

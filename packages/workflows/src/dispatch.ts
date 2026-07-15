@@ -27,6 +27,29 @@ function logicalKey(input: IncidentWorkflowInput): string {
   return `incident:${input.incidentId}:generation:${input.generation}`;
 }
 
+async function waitForConcurrentStart(
+  prisma: PrismaClient,
+  workflowRunId: string
+): Promise<DispatchIncidentWorkflowResult> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const run = await prisma.workflowRun.findUniqueOrThrow({
+      where: { id: workflowRunId }
+    });
+
+    if (run.vercelRunId) {
+      return { runId: run.vercelRunId, started: false };
+    }
+    if (run.status === WorkflowStatus.FAILED) {
+      throw new Error(
+        run.lastError ?? "The concurrent Workflow start attempt failed"
+      );
+    }
+  }
+
+  throw new Error("Timed out waiting for a concurrent Workflow start");
+}
+
 export async function dispatchIncidentWorkflow(
   prisma: PrismaClient,
   starter: IncidentWorkflowStarter,
@@ -43,9 +66,37 @@ export async function dispatchIncidentWorkflow(
     },
     update: {}
   });
-
   if (registered.vercelRunId && registered.status !== WorkflowStatus.FAILED) {
     return { runId: registered.vercelRunId, started: false };
+  }
+
+  const now = new Date();
+  const claimed = await prisma.workflowRun.updateMany({
+    where: {
+      id: registered.id,
+      vercelRunId: null,
+      OR: [
+        {
+          status: {
+            in: [WorkflowStatus.PENDING, WorkflowStatus.FAILED]
+          }
+        },
+        {
+          startedAt: {
+            lt: new Date(now.getTime() - 30_000)
+          },
+          status: WorkflowStatus.RUNNING
+        }
+      ]
+    },
+    data: {
+      lastError: null,
+      startedAt: now,
+      status: WorkflowStatus.RUNNING
+    }
+  });
+  if (claimed.count === 0) {
+    return waitForConcurrentStart(prisma, registered.id);
   }
 
   try {
@@ -55,7 +106,6 @@ export async function dispatchIncidentWorkflow(
         where: { id: registered.id },
         data: {
           lastError: null,
-          startedAt: registered.startedAt ?? new Date(),
           status: WorkflowStatus.RUNNING,
           vercelRunId: started.runId
         }

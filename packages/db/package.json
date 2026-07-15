@@ -5,12 +5,12 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     },
     "./routing-keys": {
-      "types": "./dist/routing-keys.d.ts",
-      "default": "./dist/routing-keys.js"
+      "types": "./src/routing-keys.ts",
+      "default": "./src/routing-keys.ts"
     }
   },
   "scripts": {
