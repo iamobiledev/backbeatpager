@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.next/
+.output/
+.workflow-data/
+.vercel/
+coverage/
+dist/
+generated/
+node_modules/
+test-results/
+*.log
+*.tsbuildinfo

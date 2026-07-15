@@ -1,0 +1,35 @@
+{
+  "name": "@backbeat/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "pnpm --filter @backbeat/config build && pnpm --filter @backbeat/contracts build && pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build && pnpm --filter @backbeat/workflows build && pnpm --filter @backbeat/notifications build",
+    "predev": "pnpm --filter @backbeat/config build && pnpm --filter @backbeat/contracts build && pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build && pnpm --filter @backbeat/workflows build && pnpm --filter @backbeat/notifications build",
+    "build": "nitro build",
+    "dev": "nitro dev --port 3001",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backbeat/config": "workspace:*",
+    "@backbeat/contracts": "workspace:*",
+    "@backbeat/db": "workspace:*",
+    "@backbeat/domain": "workspace:*",
+    "@backbeat/notifications": "workspace:*",
+    "@backbeat/workflows": "workspace:*",
+    "@fastify/helmet": "^13.1.0",
+    "@opentelemetry/api": "^1.9.1",
+    "@slack/bolt": "^4.7.3",
+    "@slack/types": "^3.0.0",
+    "@slack/web-api": "^8.0.0",
+    "@vercel/slack-bolt": "^1.6.0",
+    "fastify": "^5.10.0",
+    "nitro": "3.0.260610-beta",
+    "workflow": "^4.6.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1"
+  }
+}

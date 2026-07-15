@@ -1,0 +1,612 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  RESPONDER
+}
+
+enum TeamMembershipRole {
+  MANAGER
+  MEMBER
+}
+
+enum RotationType {
+  DAILY
+  WEEKLY
+  CUSTOM
+}
+
+enum IncidentState {
+  TRIGGERED
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum Severity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+enum AlertStatus {
+  TRIGGERED
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum AlertAction {
+  TRIGGER
+  ACKNOWLEDGE
+  RESOLVE
+}
+
+enum TimelineEventType {
+  INCIDENT_TRIGGERED
+  INCIDENT_ACKNOWLEDGED
+  INCIDENT_RESOLVED
+  INCIDENT_RETRIGGERED
+  INCIDENT_REASSIGNED
+  INCIDENT_SNOOZED
+  NOTE_ADDED
+  ESCALATION_STARTED
+  ESCALATION_ADVANCED
+  ESCALATION_EXHAUSTED
+  ACKNOWLEDGEMENT_EXPIRED
+  NOTIFICATION_QUEUED
+  NOTIFICATION_SENT
+  NOTIFICATION_FAILED
+  INCIDENT_CHANNEL_CREATED
+  SLACK_MESSAGE_UPDATED
+}
+
+enum ActorKind {
+  SYSTEM
+  USER
+  SLACK_USER
+  INTEGRATION
+}
+
+enum NotificationChannel {
+  SLACK
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  RETRYING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum SlackMessageDestination {
+  DM
+  SERVICE_CHANNEL
+  INCIDENT_CHANNEL
+}
+
+enum SlackInteractionStatus {
+  RECEIVED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+enum OutboxStatus {
+  PENDING
+  DISPATCHED
+  FAILED
+}
+
+enum WorkflowKind {
+  INCIDENT_GENERATION
+  MESSAGE_SYNC
+  HANDOFF
+  DIGEST
+  RECONCILIATION
+}
+
+enum WorkflowStatus {
+  PENDING
+  RUNNING
+  SLEEPING
+  SUCCEEDED
+  FAILED
+  STALE
+}
+
+model User {
+  id                      String                 @id @default(uuid()) @db.Uuid
+  name                    String
+  email                   String                 @unique
+  emailVerified           DateTime?              @db.Timestamptz(3)
+  image                   String?
+  slackUserId             String?                @unique
+  timezone                String                 @default("UTC")
+  role                    UserRole               @default(RESPONDER)
+  active                  Boolean                @default(true)
+  notificationPreferences Json                   @default("{}")
+  createdAt               DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime               @updatedAt @db.Timestamptz(3)
+  accounts                Account[]
+  sessions                Session[]
+  memberships             TeamMembership[]
+  scheduleParticipants    ScheduleParticipant[]
+  replacementOverrides    ScheduleOverride[]     @relation("OverrideReplacement")
+  replacedOverrides       ScheduleOverride[]     @relation("OverrideReplaced")
+  createdOverrides        ScheduleOverride[]     @relation("OverrideCreator")
+  escalationTargets       EscalationTarget[]
+  assignedIncidents       Incident[]             @relation("IncidentAssignee")
+  timelineEntries         IncidentTimelineEntry[]
+  notificationLogs        NotificationLog[]
+  slackMessages           SlackMessage[]
+  auditLogs               AuditLog[]
+
+  @@index([active])
+}
+
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime @db.Timestamptz(3)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime @db.Timestamptz(3)
+
+  @@unique([identifier, token])
+}
+
+model Team {
+  id                    String              @id @default(uuid()) @db.Uuid
+  name                  String
+  slug                  String              @unique
+  description           String?
+  slackChannelId        String?
+  timezone              String              @default("UTC")
+  handoffMessagesEnabled Boolean             @default(true)
+  digestEnabled         Boolean             @default(true)
+  digestDayOfWeek       Int                 @default(1)
+  digestLocalTime       String              @default("09:00")
+  active                Boolean             @default(true)
+  createdAt             DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
+  memberships           TeamMembership[]
+  services              Service[]
+  schedules             Schedule[]
+  escalationPolicies    EscalationPolicy[]
+  escalationTargets     EscalationTarget[]  @relation("EscalationTargetTeam")
+
+  @@index([active])
+}
+
+model TeamMembership {
+  id        String             @id @default(uuid()) @db.Uuid
+  teamId    String             @db.Uuid
+  userId    String             @db.Uuid
+  role      TeamMembershipRole @default(MEMBER)
+  createdAt DateTime           @default(now()) @db.Timestamptz(3)
+  team      Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model Service {
+  id                              String            @id @default(uuid()) @db.Uuid
+  teamId                          String            @db.Uuid
+  escalationPolicyId              String            @db.Uuid
+  name                            String
+  slug                            String
+  description                     String?
+  routingKeyPrefix                String            @unique
+  routingKeyHash                  String
+  slackChannelId                  String?
+  sourceLinkTemplate              String?
+  autoCreateIncidentChannel       Boolean           @default(false)
+  incidentChannelsPrivate         Boolean           @default(false)
+  criticalChannelThresholdMinutes Int?
+  nagIntervals                    Json              @default("{}")
+  active                          Boolean           @default(true)
+  createdAt                       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt                       DateTime          @updatedAt @db.Timestamptz(3)
+  team                            Team              @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  escalationPolicy                EscalationPolicy  @relation(fields: [escalationPolicyId], references: [id], onDelete: Restrict)
+  alerts                          Alert[]
+  incidents                       Incident[]
+
+  @@unique([teamId, slug])
+  @@index([escalationPolicyId])
+  @@index([active])
+}
+
+model Schedule {
+  id                String             @id @default(uuid()) @db.Uuid
+  teamId            String             @db.Uuid
+  name              String
+  slug              String
+  timezone          String
+  active            Boolean            @default(true)
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @db.Timestamptz(3)
+  team              Team               @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  layers            ScheduleLayer[]
+  overrides         ScheduleOverride[]
+  escalationTargets EscalationTarget[]
+
+  @@unique([teamId, slug])
+  @@index([teamId, active])
+}
+
+model ScheduleLayer {
+  id                    String                @id @default(uuid()) @db.Uuid
+  scheduleId            String                @db.Uuid
+  name                  String
+  position              Int
+  rotationType          RotationType
+  rotationInterval      Int                   @default(1)
+  customIntervalMinutes Int?
+  handoffLocalTime      String
+  anchorLocalDate       DateTime              @db.Date
+  anchorInstant         DateTime              @db.Timestamptz(3)
+  activeFrom            DateTime?             @db.Timestamptz(3)
+  activeUntil           DateTime?             @db.Timestamptz(3)
+  createdAt             DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime              @updatedAt @db.Timestamptz(3)
+  schedule              Schedule              @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  participants          ScheduleParticipant[]
+  restrictions          ScheduleRestriction[]
+  overrides             ScheduleOverride[]
+
+  @@unique([scheduleId, position])
+  @@index([scheduleId, activeFrom, activeUntil])
+}
+
+model ScheduleParticipant {
+  id        String        @id @default(uuid()) @db.Uuid
+  layerId   String        @db.Uuid
+  userId    String        @db.Uuid
+  position  Int
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  layer     ScheduleLayer @relation(fields: [layerId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([layerId, position])
+  @@unique([layerId, userId])
+  @@index([userId])
+}
+
+model ScheduleRestriction {
+  id             String        @id @default(uuid()) @db.Uuid
+  layerId        String        @db.Uuid
+  dayOfWeek      Int
+  startLocalTime String
+  endLocalTime   String
+  layer          ScheduleLayer @relation(fields: [layerId], references: [id], onDelete: Cascade)
+
+  @@unique([layerId, dayOfWeek, startLocalTime, endLocalTime])
+  @@index([layerId, dayOfWeek])
+}
+
+model ScheduleOverride {
+  id                String         @id @default(uuid()) @db.Uuid
+  scheduleId        String         @db.Uuid
+  layerId           String?        @db.Uuid
+  replacementUserId String         @db.Uuid
+  replacedUserId    String?        @db.Uuid
+  createdById       String?        @db.Uuid
+  startsAt          DateTime       @db.Timestamptz(3)
+  endsAt            DateTime       @db.Timestamptz(3)
+  reason            String?
+  createdAt         DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime       @updatedAt @db.Timestamptz(3)
+  schedule          Schedule       @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  layer             ScheduleLayer? @relation(fields: [layerId], references: [id], onDelete: Cascade)
+  replacementUser   User           @relation("OverrideReplacement", fields: [replacementUserId], references: [id], onDelete: Restrict)
+  replacedUser      User?          @relation("OverrideReplaced", fields: [replacedUserId], references: [id], onDelete: Restrict)
+  createdBy         User?          @relation("OverrideCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([scheduleId, startsAt, endsAt])
+  @@index([layerId, startsAt, endsAt])
+  @@index([replacementUserId])
+}
+
+model EscalationPolicy {
+  id                           String           @id @default(uuid()) @db.Uuid
+  teamId                       String           @db.Uuid
+  name                         String
+  slug                         String
+  repeatCount                  Int              @default(0)
+  acknowledgementTimeoutMinutes Int?
+  active                       Boolean          @default(true)
+  createdAt                    DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt                    DateTime         @updatedAt @db.Timestamptz(3)
+  team                         Team             @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  steps                        EscalationStep[]
+  services                     Service[]
+
+  @@unique([teamId, slug])
+  @@index([teamId, active])
+}
+
+model EscalationStep {
+  id             String             @id @default(uuid()) @db.Uuid
+  policyId       String             @db.Uuid
+  position       Int
+  timeoutMinutes Int
+  policy         EscalationPolicy   @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  targets        EscalationTarget[]
+  incidents      Incident[]         @relation("IncidentCurrentStep")
+
+  @@unique([policyId, position])
+}
+
+model EscalationTarget {
+  id         String         @id @default(uuid()) @db.Uuid
+  stepId     String         @db.Uuid
+  position   Int
+  userId     String?        @db.Uuid
+  scheduleId String?        @db.Uuid
+  teamId     String?        @db.Uuid
+  step       EscalationStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  user       User?          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  schedule   Schedule?      @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  team       Team?          @relation("EscalationTargetTeam", fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@unique([stepId, position])
+  @@index([userId])
+  @@index([scheduleId])
+  @@index([teamId])
+}
+
+model Alert {
+  id              String           @id @default(uuid()) @db.Uuid
+  serviceId       String           @db.Uuid
+  dedupKey        String
+  status          AlertStatus
+  severity        Severity
+  source          String
+  latestPayload   Json
+  occurrenceCount Int              @default(1)
+  firstSeenAt     DateTime         @default(now()) @db.Timestamptz(3)
+  lastSeenAt      DateTime         @default(now()) @db.Timestamptz(3)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
+  service         Service          @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  occurrences     AlertOccurrence[]
+  incidents       IncidentAlert[]
+
+  @@unique([serviceId, dedupKey])
+  @@index([serviceId, status])
+  @@index([lastSeenAt])
+}
+
+model AlertOccurrence {
+  id          String      @id @default(uuid()) @db.Uuid
+  alertId     String      @db.Uuid
+  action      AlertAction
+  payload     Json
+  requestId   String?     @unique
+  requestHash String?
+  receivedAt  DateTime    @default(now()) @db.Timestamptz(3)
+  alert       Alert       @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([alertId, receivedAt])
+}
+
+model Incident {
+  id                       String                  @id @default(uuid()) @db.Uuid
+  number                   Int                     @unique @default(autoincrement())
+  serviceId                String                  @db.Uuid
+  dedupKey                 String
+  state                    IncidentState           @default(TRIGGERED)
+  severity                 Severity
+  summary                  String
+  source                   String
+  sourceUrl                String?
+  assigneeId               String?                 @db.Uuid
+  currentStepId            String?                 @db.Uuid
+  currentEscalationLoop    Int                     @default(0)
+  currentEscalationPosition Int                    @default(0)
+  escalationDeadline       DateTime?               @db.Timestamptz(3)
+  escalationGeneration     Int                     @default(0)
+  nagDeadline              DateTime?               @db.Timestamptz(3)
+  nagGeneration            Int                     @default(0)
+  snoozedUntil             DateTime?               @db.Timestamptz(3)
+  acknowledgementExpiresAt DateTime?               @db.Timestamptz(3)
+  incidentSlackChannelId   String?
+  incidentStatusMessageTs  String?
+  incidentChannelDeadline  DateTime?               @db.Timestamptz(3)
+  openedAt                 DateTime                @default(now()) @db.Timestamptz(3)
+  acknowledgedAt           DateTime?               @db.Timestamptz(3)
+  resolvedAt               DateTime?               @db.Timestamptz(3)
+  version                  Int                     @default(0)
+  createdAt                DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime                @updatedAt @db.Timestamptz(3)
+  service                  Service                 @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  assignee                 User?                   @relation("IncidentAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  currentStep              EscalationStep?         @relation("IncidentCurrentStep", fields: [currentStepId], references: [id], onDelete: SetNull)
+  alerts                   IncidentAlert[]
+  timelineEntries          IncidentTimelineEntry[]
+  notificationLogs         NotificationLog[]
+  slackMessages            SlackMessage[]
+
+  @@index([state, openedAt])
+  @@index([serviceId, openedAt])
+  @@index([assigneeId, state])
+  @@index([escalationDeadline])
+  @@index([nagDeadline])
+  @@index([incidentChannelDeadline])
+}
+
+model IncidentAlert {
+  incidentId String   @db.Uuid
+  alertId    String   @db.Uuid
+  linkedAt   DateTime @default(now()) @db.Timestamptz(3)
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  alert      Alert    @relation(fields: [alertId], references: [id], onDelete: Restrict)
+
+  @@id([incidentId, alertId])
+  @@index([alertId])
+}
+
+model IncidentTimelineEntry {
+  id           String            @id @default(uuid()) @db.Uuid
+  incidentId   String            @db.Uuid
+  type         TimelineEventType
+  actorKind    ActorKind
+  actorUserId  String?           @db.Uuid
+  slackUserId  String?
+  message      String
+  metadata     Json              @default("{}")
+  idempotencyKey String?         @unique
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  incident     Incident          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  actorUser    User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([incidentId, createdAt])
+}
+
+model NotificationLog {
+  id                 String             @id @default(uuid()) @db.Uuid
+  incidentId         String             @db.Uuid
+  targetUserId       String?            @db.Uuid
+  channel            NotificationChannel
+  targetAddress      String
+  status             NotificationStatus @default(PENDING)
+  attempt            Int                @default(0)
+  idempotencyKey     String             @unique
+  providerMessageId  String?
+  slackChannelId     String?
+  slackMessageTs     String?
+  errorCode          String?
+  errorMessage       String?
+  queuedAt           DateTime           @default(now()) @db.Timestamptz(3)
+  attemptedAt        DateTime?          @db.Timestamptz(3)
+  deliveredAt        DateTime?          @db.Timestamptz(3)
+  createdAt          DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @db.Timestamptz(3)
+  incident           Incident           @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  targetUser         User?              @relation(fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([incidentId, createdAt])
+  @@index([status, queuedAt])
+  @@index([targetUserId])
+}
+
+model SlackMessage {
+  id             String                  @id @default(uuid()) @db.Uuid
+  incidentId     String                  @db.Uuid
+  targetUserId   String?                 @db.Uuid
+  destination    SlackMessageDestination
+  destinationKey String                  @unique
+  channelId      String
+  messageTs      String
+  renderVersion  Int                     @default(0)
+  createdAt      DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime                @updatedAt @db.Timestamptz(3)
+  incident       Incident                @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  targetUser     User?                   @relation(fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@unique([channelId, messageTs])
+  @@index([incidentId, destination])
+}
+
+model SlackInteractionReceipt {
+  id           String                 @id @default(uuid()) @db.Uuid
+  receiptKey   String                 @unique
+  interactionType String
+  slackUserId  String?
+  status       SlackInteractionStatus @default(RECEIVED)
+  payload      Json?
+  result       Json?
+  errorMessage String?
+  receivedAt   DateTime               @default(now()) @db.Timestamptz(3)
+  processedAt  DateTime?              @db.Timestamptz(3)
+
+  @@index([status, receivedAt])
+}
+
+model OutboxEvent {
+  id              String       @id @default(uuid()) @db.Uuid
+  idempotencyKey  String       @unique
+  kind            String
+  payload         Json
+  status          OutboxStatus @default(PENDING)
+  availableAt     DateTime     @default(now()) @db.Timestamptz(3)
+  dispatchedAt    DateTime?    @db.Timestamptz(3)
+  attempts        Int          @default(0)
+  lastError       String?
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@index([status, availableAt])
+}
+
+model WorkflowRun {
+  id             String         @id @default(uuid()) @db.Uuid
+  logicalKey     String         @unique
+  kind           WorkflowKind
+  entityId       String
+  generation     Int
+  vercelRunId    String?        @unique
+  status         WorkflowStatus @default(PENDING)
+  expectedWakeAt DateTime?      @db.Timestamptz(3)
+  startedAt      DateTime?      @db.Timestamptz(3)
+  finishedAt     DateTime?      @db.Timestamptz(3)
+  lastError      String?
+  createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
+
+  @@index([kind, entityId, generation])
+  @@index([status, expectedWakeAt])
+}
+
+model AuditLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  actorUserId  String?   @db.Uuid
+  action       String
+  entityType   String
+  entityId     String
+  changes      Json      @default("{}")
+  requestId    String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  actorUser    User?     @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+}

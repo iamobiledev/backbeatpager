@@ -1,0 +1,54 @@
+display_information:
+  name: Backbeat Pager
+  description: Slack-first on-call and incident management
+  background_color: "#111827"
+
+features:
+  app_home:
+    home_tab_enabled: true
+    messages_tab_enabled: false
+    messages_tab_read_only_enabled: true
+  bot_user:
+    display_name: Backbeat Pager
+    always_online: true
+  slash_commands:
+    - command: /oncall
+      description: Show current on-call engineers or create an override
+      usage_hint: "[team|schedule|override]"
+      url: https://YOUR_API_DOMAIN/slack/events
+      should_escape: false
+    - command: /incident
+      description: List, trigger, acknowledge, or resolve incidents
+      usage_hint: "list|trigger|ack <id>|resolve <id>"
+      url: https://YOUR_API_DOMAIN/slack/events
+      should_escape: false
+
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - channels:history
+      - channels:manage
+      - channels:read
+      - chat:write
+      - chat:write.public
+      - commands
+      - groups:read
+      - groups:write
+      - im:history
+      - im:write
+      - pins:write
+      - users:read
+      - users:read.email
+
+settings:
+  event_subscriptions:
+    request_url: https://YOUR_API_DOMAIN/slack/events
+    bot_events:
+      - app_home_opened
+  interactivity:
+    is_enabled: true
+    request_url: https://YOUR_API_DOMAIN/slack/events
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

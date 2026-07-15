@@ -1,0 +1,10 @@
+.env
+.git
+.next
+.vercel
+coverage
+dist
+node_modules
+test-results
+*.log
+*.tsbuildinfo
