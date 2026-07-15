@@ -153,7 +153,7 @@ describeDatabase("durable incident workflow engine", () => {
     expect(sleeping).toEqual({
       done: false,
       nextGeneration: null,
-      sleepUntil: new Date("2026-01-05T10:05:00.000Z")
+      sleepUntil: "2026-01-05T10:05:00.000Z"
     });
 
     await prisma.$disconnect();

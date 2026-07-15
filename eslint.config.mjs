@@ -6,6 +6,8 @@ export default tseslint.config(
   {
     ignores: [
       "**/.next/**",
+      "**/.output/**",
+      "**/.workflow-data/**",
       "**/coverage/**",
       "**/dist/**",
       "**/generated/**",

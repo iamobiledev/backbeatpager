@@ -4,10 +4,10 @@ Backbeat Pager is a Slack-first, single-organization on-call and incident
 management service. It is designed as a lightweight PagerDuty replacement for
 internal engineering teams.
 
-> **Current delivery:** Phase 1 provides the production data model, migrations,
-> demo seed, strict TypeScript monorepo, API/UI health shells, and Vercel/Neon
-> deployment foundation. Alert ingestion and durable escalation arrive in
-> Phase 2.
+> **Current delivery:** Phase 2 adds PagerDuty-compatible alert ingestion,
+> generic/Alertmanager/Grafana adapters, timezone-correct schedules, incident
+> lifecycle operations, escalation loops, and crash-safe Vercel Workflows.
+> Slack paging arrives in Phase 3.
 
 ## Architecture
 
@@ -17,7 +17,7 @@ internal engineering teams.
 | API                | Fastify on Vercel Fluid Compute         |
 | Database           | PostgreSQL on Neon                      |
 | ORM and migrations | Prisma                                  |
-| Durable execution  | Vercel Workflows (Phase 2)              |
+| Durable execution  | Vercel Workflows                        |
 | Slack              | Bolt for JavaScript over HTTP (Phase 3) |
 | Email              | Resend (Phase 3)                        |
 | Authentication     | Google OIDC with Auth.js (Phase 5)      |
@@ -91,8 +91,64 @@ applications. Data is retained in the `postgres-data` volume.
 - a Payments API service.
 
 The seed rotates the demo service routing key on every run and prints it exactly
-once with a Phase 2-ready curl command. The plaintext key is never stored.
+once with a ready-to-run curl command. The plaintext key is never stored.
 Optional Slack IDs can be supplied through the `DEMO_*` environment variables.
+
+To fire a unique demo alert using the printed key:
+
+```bash
+DEMO_ROUTING_KEY='bbp_...' pnpm demo:alert
+```
+
+## Alert ingestion
+
+The PagerDuty-compatible endpoint is:
+
+```text
+POST /api/v1/alerts
+```
+
+```json
+{
+  "routing_key": "bbp_...",
+  "event_action": "trigger",
+  "dedup_key": "payments-api-production",
+  "payload": {
+    "summary": "Payment authorization failures",
+    "severity": "critical",
+    "source": "payments-api",
+    "source_url": "https://monitoring.example.com/alerts/123",
+    "custom_details": {
+      "environment": "production"
+    }
+  }
+}
+```
+
+Routing keys may instead be supplied as `Authorization: Bearer <key>` or
+`X-Routing-Key`. Trigger, acknowledge, and resolve calls return `202` after the
+database transaction and durable Workflow start are accepted. Identical retries
+are idempotent; service plus `dedup_key` has at most one open incident.
+
+Adapters:
+
+- `POST /api/v1/integrations/generic`
+- `POST /api/v1/integrations/alertmanager`
+- `POST /api/v1/integrations/grafana`
+
+See [Alertmanager configuration](docs/alertmanager.md) and
+[Grafana configuration](docs/grafana.md).
+
+## Durable escalation
+
+Every incident generation is registered in PostgreSQL before Vercel Workflow
+execution. A Workflow sleeps until the escalation or acknowledgment-expiry
+deadline, re-reads canonical state, and no-ops if its generation is stale.
+Transitions start a new generation, making retries and duplicate delivery safe.
+
+The signed daily `POST /internal/reconcile` Vercel Cron repairs the rare gap
+between a committed database transaction and Workflow start. Core escalation
+timing uses Workflow sleeps and does not depend on Cron precision.
 
 ## Database connections
 
@@ -122,6 +178,7 @@ pnpm db:migrate:deploy  # Apply checked-in migrations
 pnpm db:migrate:dev     # Create a development migration
 pnpm db:reset           # Destructively reset a local database
 pnpm db:seed            # Create/refresh demo configuration
+pnpm demo:alert         # Fire a demo alert using DEMO_ROUTING_KEY
 ```
 
 To execute database integration tests:

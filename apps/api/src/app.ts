@@ -8,6 +8,7 @@ import {
   type AlertRouteDependencies
 } from "./routes/alerts.js";
 import { registerReconciliationRoute } from "./routes/reconciliation.js";
+import { registerWorkflowRuntimeRoutes } from "./routes/workflow-runtime.js";
 
 export interface BuildAppOptions {
   alertRoutes?: AlertRouteDependencies;
@@ -63,6 +64,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     void app.register((scope, _options, done) => {
       registerAlertRoutes(scope, alertRoutes);
       registerReconciliationRoute(scope, alertRoutes);
+      registerWorkflowRuntimeRoutes(scope, alertRoutes);
       done();
     });
   }

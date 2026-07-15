@@ -178,14 +178,21 @@ async function processEvent(
             reference
           });
 
-  await dispatchIncidentWorkflow(
-    dependencies.prisma,
-    dependencies.workflowStarter,
-    {
-      generation: result.incident.escalationGeneration,
-      incidentId: result.incident.id
-    }
-  );
+  try {
+    await dispatchIncidentWorkflow(
+      dependencies.prisma,
+      dependencies.workflowStarter,
+      {
+        generation: result.incident.escalationGeneration,
+        incidentId: result.incident.id
+      }
+    );
+  } catch {
+    throw new AlertHttpError(
+      503,
+      "The incident was saved, but durable processing is temporarily unavailable; retry this event"
+    );
+  }
 
   return {
     changed: result.changed,

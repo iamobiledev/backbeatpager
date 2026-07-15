@@ -23,6 +23,8 @@ describeDatabase("alert ingestion API", () => {
   let app: ReturnType<typeof buildApp>;
 
   beforeAll(async () => {
+    process.env.CRON_SECRET = "test-cron-secret";
+    process.env.WORKFLOW_INTERNAL_SECRET = "test-workflow-secret";
     prisma = createPrismaClient(testDatabaseUrl, "pg");
     await prisma.$executeRawUnsafe(
       'TRUNCATE TABLE "User", "Team", "OutboxEvent", "WorkflowRun", "SlackInteractionReceipt", "VerificationToken" CASCADE'
@@ -119,6 +121,8 @@ describeDatabase("alert ingestion API", () => {
   afterAll(async () => {
     await app.close();
     await prisma.$disconnect();
+    delete process.env.CRON_SECRET;
+    delete process.env.WORKFLOW_INTERNAL_SECRET;
   });
 
   function event(dedupKey: string, eventAction = "trigger") {
@@ -326,5 +330,33 @@ describeDatabase("alert ingestion API", () => {
       status: "ready"
     });
     expect(workflowStarts.length).toBeGreaterThan(0);
+  });
+
+  it("protects Workflow runtime and reconciliation routes", async () => {
+    const unauthorized = await app.inject({
+      method: "POST",
+      url: "/internal/workflows/wake",
+      payload: {
+        generation: 1,
+        incidentId: "00000000-0000-0000-0000-000000000000"
+      }
+    });
+    expect(unauthorized.statusCode).toBe(401);
+
+    const invalid = await app.inject({
+      headers: { authorization: "Bearer test-workflow-secret" },
+      method: "POST",
+      url: "/internal/workflows/wake",
+      payload: { generation: -1, incidentId: "invalid" }
+    });
+    expect(invalid.statusCode).toBe(400);
+
+    const reconciled = await app.inject({
+      headers: { authorization: "Bearer test-cron-secret" },
+      method: "POST",
+      url: "/internal/reconcile"
+    });
+    expect(reconciled.statusCode).toBe(200);
+    expect(reconciled.json()).toMatchObject({ status: "success" });
   });
 });

@@ -1,7 +1,4 @@
-import { getPrismaClient } from "@backbeat/db";
 import {
-  dispatchIncidentWorkflow,
-  evaluateIncidentWake,
   type IncidentWakeResult,
   type IncidentWorkflowInput,
   type IncidentWorkflowStarter
@@ -14,19 +11,29 @@ async function evaluateWakeStep(
 ): Promise<IncidentWakeResult> {
   "use step";
 
-  return evaluateIncidentWake(getPrismaClient(), input);
-}
+  const apiBaseUrl = process.env.API_BASE_URL;
+  const secret = process.env.WORKFLOW_INTERNAL_SECRET;
+  if (!apiBaseUrl || !secret) {
+    throw new Error(
+      "API_BASE_URL and WORKFLOW_INTERNAL_SECRET are required in Workflow steps"
+    );
+  }
 
-async function startNextGenerationStep(
-  input: IncidentWorkflowInput
-): Promise<void> {
-  "use step";
+  const response = await fetch(`${apiBaseUrl}/internal/workflows/wake`, {
+    body: JSON.stringify(input),
+    headers: {
+      authorization: `Bearer ${secret}`,
+      "content-type": "application/json"
+    },
+    method: "POST"
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Incident wake endpoint failed with HTTP ${response.status}`
+    );
+  }
 
-  await dispatchIncidentWorkflow(
-    getPrismaClient(),
-    vercelIncidentWorkflowStarter,
-    input
-  );
+  return (await response.json()) as IncidentWakeResult;
 }
 
 export async function incidentGenerationWorkflow(
@@ -36,16 +43,10 @@ export async function incidentGenerationWorkflow(
 
   while (true) {
     const result = await evaluateWakeStep(input);
-    if (result.nextGeneration !== null) {
-      await startNextGenerationStep({
-        generation: result.nextGeneration,
-        incidentId: input.incidentId
-      });
-      return;
-    }
+    if (result.nextGeneration !== null) return;
     if (result.done) return;
 
-    await sleep(result.sleepUntil);
+    await sleep(new Date(result.sleepUntil));
   }
 }
 

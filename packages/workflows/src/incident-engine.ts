@@ -16,7 +16,7 @@ export type IncidentWakeResult =
   | {
       done: false;
       nextGeneration: null;
-      sleepUntil: Date;
+      sleepUntil: string;
     }
   | {
       done: true;
@@ -81,7 +81,7 @@ export async function evaluateIncidentWake(
       return {
         done: false,
         nextGeneration: null,
-        sleepUntil: incident.acknowledgementExpiresAt
+        sleepUntil: incident.acknowledgementExpiresAt.toISOString()
       };
     }
 
@@ -117,7 +117,7 @@ export async function evaluateIncidentWake(
     return {
       done: false,
       nextGeneration: null,
-      sleepUntil: incident.escalationDeadline
+      sleepUntil: incident.escalationDeadline.toISOString()
     };
   }
 
