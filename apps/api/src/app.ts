@@ -7,6 +7,7 @@ import {
   registerAlertRoutes,
   type AlertRouteDependencies
 } from "./routes/alerts.js";
+import { registerReconciliationRoute } from "./routes/reconciliation.js";
 
 export interface BuildAppOptions {
   alertRoutes?: AlertRouteDependencies;
@@ -61,6 +62,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (alertRoutes) {
     void app.register((scope, _options, done) => {
       registerAlertRoutes(scope, alertRoutes);
+      registerReconciliationRoute(scope, alertRoutes);
       done();
     });
   }
