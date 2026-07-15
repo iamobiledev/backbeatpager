@@ -1,12 +1,21 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
+
+import { getPrismaClient } from "@backbeat/db";
+
 import { buildApp } from "./app.js";
+import { vercelIncidentWorkflowStarter } from "./workflows/incident-generation.js";
 
-const app = buildApp();
-
-const port = Number(process.env.PORT ?? 3001);
-
-await app.listen({
-  host: "0.0.0.0",
-  port
+const app = buildApp({
+  alertRoutes: {
+    prisma: getPrismaClient(),
+    workflowStarter: vercelIncidentWorkflowStarter
+  }
 });
+await app.ready();
 
-export default app;
+export default function handler(
+  request: IncomingMessage,
+  response: ServerResponse
+): void {
+  app.server.emit("request", request, response);
+}

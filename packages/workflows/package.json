@@ -12,5 +12,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backbeat/db": "workspace:*",
+    "@backbeat/domain": "workspace:*"
   }
 }

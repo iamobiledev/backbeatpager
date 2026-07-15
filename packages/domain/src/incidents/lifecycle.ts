@@ -53,6 +53,11 @@ export interface IncidentReference {
 
 export interface IncidentMutationInput {
   actor: IncidentActor;
+  alertEvent?: {
+    payload: Prisma.InputJsonValue;
+    requestHash?: string;
+    requestId?: string;
+  };
   idempotencyKey: string;
   now?: Date;
   reference: IncidentReference;
@@ -176,6 +181,49 @@ async function escalationPolicy(
   });
 
   return service.escalationPolicy;
+}
+
+async function recordAlertAction(
+  transaction: Prisma.TransactionClient,
+  reference: IncidentReference,
+  event: IncidentMutationInput["alertEvent"],
+  action: AlertAction,
+  status: AlertStatus
+): Promise<void> {
+  if (!event || !reference.serviceId || !reference.dedupKey) return;
+
+  if (event.requestId) {
+    const existing = await transaction.alertOccurrence.findUnique({
+      where: { requestId: event.requestId }
+    });
+    if (existing) return;
+  }
+
+  const alert = await transaction.alert.findUnique({
+    where: {
+      serviceId_dedupKey: {
+        dedupKey: reference.dedupKey,
+        serviceId: reference.serviceId
+      }
+    }
+  });
+  if (!alert) return;
+
+  await transaction.alert.update({
+    where: { id: alert.id },
+    data: {
+      lastSeenAt: new Date(),
+      status,
+      occurrences: {
+        create: {
+          action,
+          payload: event.payload,
+          ...(event.requestHash ? { requestHash: event.requestHash } : {}),
+          ...(event.requestId ? { requestId: event.requestId } : {})
+        }
+      }
+    }
+  });
 }
 
 function deadlineFor(step: { timeoutMinutes: number }, now: Date): Date {
@@ -394,6 +442,13 @@ export async function acknowledgeIncident(
         }
       }
     });
+    await recordAlertAction(
+      transaction,
+      input.reference,
+      input.alertEvent,
+      AlertAction.ACKNOWLEDGE,
+      AlertStatus.ACKNOWLEDGED
+    );
 
     if (current.state === IncidentState.ACKNOWLEDGED) {
       return { changed: false, incident: current, targetUserIds: [] };
@@ -480,6 +535,13 @@ export async function resolveIncident(
     const current = await transaction.incident.findUniqueOrThrow({
       where: { id: incident.id }
     });
+    await recordAlertAction(
+      transaction,
+      input.reference,
+      input.alertEvent,
+      AlertAction.RESOLVE,
+      AlertStatus.RESOLVED
+    );
     if (current.state === IncidentState.RESOLVED) {
       return { changed: false, incident: current, targetUserIds: [] };
     }

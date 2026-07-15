@@ -4,7 +4,9 @@ packages:
   - "tests/*"
 
 onlyBuiltDependencies:
+  - "@swc/core"
   - "@prisma/engines"
+  - cbor-extract
   - esbuild
   - "prisma"
   - sharp

@@ -4,13 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "build": "nitro build",
+    "dev": "nitro dev --port 3001",
+    "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "fastify": "^5.10.0"
+    "@backbeat/contracts": "workspace:*",
+    "@backbeat/db": "workspace:*",
+    "@backbeat/domain": "workspace:*",
+    "@backbeat/workflows": "workspace:*",
+    "@fastify/helmet": "^13.1.0",
+    "@opentelemetry/api": "^1.9.1",
+    "fastify": "^5.10.0",
+    "nitro": "3.0.260610-beta",
+    "workflow": "^4.6.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1"
