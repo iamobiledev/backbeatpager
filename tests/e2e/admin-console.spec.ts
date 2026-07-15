@@ -88,6 +88,10 @@ test("admin setup flow and critical views", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: serviceName })).toBeVisible();
 
+  await page.getByRole("link", { name: "Analytics" }).click();
+  await expect(page.getByRole("heading", { name: "Analytics" })).toBeVisible();
+  await expect(page.getByText("MTTA", { exact: true })).toBeVisible();
+
   await page.getByRole("link", { name: "Incidents" }).click();
   const firstIncident = page.locator("tbody a").first();
   if (await firstIncident.isVisible()) {
