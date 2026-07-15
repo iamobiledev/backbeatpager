@@ -4,9 +4,9 @@ Backbeat Pager is a Slack-first, single-organization on-call and incident
 management service. It is designed as a lightweight PagerDuty replacement for
 internal engineering teams.
 
-> **Current delivery:** Phase 3 adds rich Slack paging, DM and channel message
-> synchronization, signed incident buttons, reassignment, nagging, critical
-> incident channels, and Resend email delivery.
+> **Current delivery:** Phase 4 adds `/oncall`, `/incident`, manual trigger,
+> resolution and override modals, searchable service options, quick actions,
+> and personalized App Home views.
 
 ## Architecture
 
@@ -268,6 +268,44 @@ terminal failures are recorded without stopping escalation.
 - Acknowledge and resolve invalidate sleeping escalation/nag generations.
 - Double clicks are safe: interaction receipts and signed message versions
   prevent duplicate state transitions.
+
+## Slack commands and App Home
+
+### `/oncall`
+
+- `/oncall` lists current and next coverage for every active schedule.
+- `/oncall payments` filters by team or schedule name/slug.
+- `/oncall override` opens a timezone-labelled modal for selecting a schedule,
+  covering engineer, start/end, and reason. The submitter must belong to the
+  schedule's team.
+
+Overrides take effect immediately in `/oncall`, escalation target resolution,
+and App Home.
+
+### `/incident`
+
+- `/incident list open` or `/incident list all` returns recent incidents with
+  signed quick-action buttons.
+- `/incident trigger` opens a manual trigger modal with searchable service
+  options, severity, summary, and optional source URL.
+- `/incident ack <number>` acknowledges directly.
+- `/incident resolve <number>` opens an optional resolution-note modal.
+
+Invalid IDs and unmapped users receive private guidance rather than channel
+noise. Modal submissions and command retries are idempotent.
+
+### App Home
+
+Opening the Home tab publishes a personalized view containing:
+
+- the user's shifts for the next 14 days;
+- open incidents assigned to the user;
+- open incidents owned by the user's teams;
+- links to web schedules and incidents.
+
+Slack view hashes are used for optimistic publication. Incident actions, manual
+triggers, resolution, reassignment, and override creation refresh the acting
+user's Home view.
 
 ## Data-model safety
 
