@@ -12,5 +12,19 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@backbeat/db": "workspace:*",
+    "@backbeat/domain": "workspace:*",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "@slack/types": "^3.0.0",
+    "@slack/web-api": "^8.0.0",
+    "react": "^19.2.7",
+    "resend": "^6.17.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17"
   }
 }
