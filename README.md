@@ -4,10 +4,9 @@ Backbeat Pager is a Slack-first, single-organization on-call and incident
 management service. It is designed as a lightweight PagerDuty replacement for
 internal engineering teams.
 
-> **Current delivery:** Phase 2 adds PagerDuty-compatible alert ingestion,
-> generic/Alertmanager/Grafana adapters, timezone-correct schedules, incident
-> lifecycle operations, escalation loops, and crash-safe Vercel Workflows.
-> Slack paging arrives in Phase 3.
+> **Current delivery:** Phase 3 adds rich Slack paging, DM and channel message
+> synchronization, signed incident buttons, reassignment, nagging, critical
+> incident channels, and Resend email delivery.
 
 ## Architecture
 
@@ -18,8 +17,8 @@ internal engineering teams.
 | Database           | PostgreSQL on Neon                      |
 | ORM and migrations | Prisma                                  |
 | Durable execution  | Vercel Workflows                        |
-| Slack              | Bolt for JavaScript over HTTP (Phase 3) |
-| Email              | Resend (Phase 3)                        |
+| Slack              | Bolt for JavaScript over HTTP           |
+| Email              | Resend                                  |
 | Authentication     | Google OIDC with Auth.js (Phase 5)      |
 
 The repository deploys as two Vercel projects:
@@ -219,8 +218,56 @@ For production releases:
 2. Deploy the API project.
 3. Deploy the web project.
 
-Use Vercel Deployment Protection for previews. Production Slack callbacks will
-point only at the production API deployment in Phase 3.
+Use Vercel Deployment Protection for previews. Production Slack callbacks
+should point only at the production API deployment.
+
+## Slack app setup
+
+1. Open Slack's app management page and create an app **from a manifest**.
+2. Copy `manifest.yml`, replace every `YOUR_API_DOMAIN`, and install it in the
+   organization workspace.
+3. Add `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET` to the API Vercel project.
+4. Generate a separate random `SLACK_ACTION_SECRET` of at least 32 bytes. It
+   signs every incident button value so client-supplied IDs are never trusted.
+5. Set `SLACK_REQUIRED=true` in production after configuration is complete.
+6. Map each service to a Slack channel and ensure the bot is in private service
+   channels. Public posting uses `chat:write.public`.
+
+Slack sends events, commands, interactive actions, and URL verification to
+`POST /slack/events`. Production uses HTTP mode only; Socket Mode is not
+compatible with an indefinite serverless deployment.
+
+The manifest includes the scopes needed for DMs, email-based user mapping,
+public/private incident channel creation, member invitations, pins, commands,
+and App Home. Phase 4 activates the commands and Home listeners already
+declared by the manifest.
+
+Slack users are mapped to active Backbeat Pager users by verified work email on
+first interaction or delivery. Unmapped users receive a useful error and failed
+pages are recorded in both `NotificationLog` and the incident timeline.
+
+## Resend setup
+
+1. Verify the sending domain in Resend.
+2. Set `RESEND_API_KEY` and `EMAIL_FROM` in the API Vercel project.
+3. Enable email in a user's notification preferences. Slack remains enabled
+   unless explicitly disabled.
+
+Every email uses a deterministic Resend idempotency key and a database unique
+delivery record. Retryable `429`/`5xx` responses use exponential backoff;
+terminal failures are recorded without stopping escalation.
+
+## Slack paging behavior
+
+- Each escalation target receives a DM with Acknowledge, Resolve, Escalate,
+  Reassign, and Snooze 15m actions.
+- One service-channel message is updated in place as state changes.
+- Critical incidents can create and pin a dedicated
+  `inc-<number>-<summary>` channel after the configured threshold.
+- Severity-specific nag intervals send fresh DMs until acknowledgement.
+- Acknowledge and resolve invalidate sleeping escalation/nag generations.
+- Double clicks are safe: interaction receipts and signed message versions
+  prevent duplicate state transitions.
 
 ## Data-model safety
 

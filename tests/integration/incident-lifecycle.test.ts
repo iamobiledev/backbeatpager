@@ -319,9 +319,9 @@ describeDatabase("incident lifecycle", () => {
         reference: { incidentId: triggered.incident.id },
         requireDeadline: true
       })
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: "STALE_INCIDENT_GENERATION"
-    });
+    } satisfies Partial<DomainError>);
   });
 
   it("re-triggers an incident when acknowledgement expires", async () => {

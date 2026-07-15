@@ -291,9 +291,9 @@ describeDatabase("Slack incident actions", () => {
           slackUserId: "U_ACTOR"
         }
       )
-    ).rejects.toMatchObject<Partial<SlackActionError>>({
+    ).rejects.toMatchObject({
       code: "INVALID_ACTION"
-    });
+    } satisfies Partial<SlackActionError>);
 
     await expect(
       processSlackIncidentAction(
@@ -305,9 +305,9 @@ describeDatabase("Slack incident actions", () => {
           slackUserId: "U_UNKNOWN"
         }
       )
-    ).rejects.toMatchObject<Partial<SlackActionError>>({
+    ).rejects.toMatchObject({
       code: "UNMAPPED_USER"
-    });
+    } satisfies Partial<SlackActionError>);
   });
 
   it("verifies Slack signatures and answers URL challenges promptly", async () => {
