@@ -1,0 +1,3 @@
+ALTER TABLE "User"
+ADD COLUMN "emailVerified" TIMESTAMPTZ(3),
+ADD COLUMN "image" TEXT;
