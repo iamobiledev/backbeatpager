@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@backbeat/config": "workspace:*",
     "@backbeat/contracts": "workspace:*",
     "@backbeat/db": "workspace:*",
     "@backbeat/domain": "workspace:*",

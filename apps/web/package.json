@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prebuild": "pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build",
-    "predev": "pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build",
+    "prebuild": "pnpm --filter @backbeat/config build && pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build",
+    "predev": "pnpm --filter @backbeat/config build && pnpm --filter @backbeat/db build && pnpm --filter @backbeat/domain build",
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
+    "@backbeat/config": "workspace:*",
     "@backbeat/db": "workspace:*",
     "@backbeat/domain": "workspace:*",
     "@backbeat/workflows": "workspace:*",

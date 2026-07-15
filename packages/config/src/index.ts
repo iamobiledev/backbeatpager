@@ -15,3 +15,84 @@ export function parseRuntimeEnvironment(
 ): RuntimeEnvironment {
   return runtimeEnvironmentSchema.parse(environment);
 }
+
+const sharedDatabaseSchema = z.object({
+  DATABASE_DRIVER: z.enum(["neon", "pg"]).optional(),
+  DATABASE_URL: z.url(),
+  DIRECT_URL: z.url().optional()
+});
+
+export const apiEnvironmentSchema = runtimeEnvironmentSchema
+  .and(sharedDatabaseSchema)
+  .and(
+    z.object({
+      API_BASE_URL: z.url(),
+      CRON_SECRET: z.string().min(32),
+      EMAIL_FROM: z.string().min(3).optional(),
+      RESEND_API_KEY: z.string().min(1).optional(),
+      SLACK_ACTION_SECRET: z.string().min(32).optional(),
+      SLACK_BOT_TOKEN: z.string().min(1).optional(),
+      SLACK_REQUIRED: z.enum(["true", "false"]).default("false"),
+      SLACK_SIGNING_SECRET: z.string().min(1).optional(),
+      WEB_BASE_URL: z.url().optional(),
+      WORKFLOW_INTERNAL_SECRET: z.string().min(32)
+    })
+  )
+  .superRefine((environment, context) => {
+    if (
+      environment.SLACK_REQUIRED === "true" &&
+      (!environment.SLACK_BOT_TOKEN ||
+        !environment.SLACK_SIGNING_SECRET ||
+        !environment.SLACK_ACTION_SECRET)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Slack token, signing secret, and action secret are required when SLACK_REQUIRED=true"
+      });
+    }
+    if (
+      Boolean(environment.RESEND_API_KEY) !== Boolean(environment.EMAIL_FROM)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "RESEND_API_KEY and EMAIL_FROM must be configured together"
+      });
+    }
+  });
+
+export const webEnvironmentSchema = runtimeEnvironmentSchema
+  .and(sharedDatabaseSchema)
+  .and(
+    z.object({
+      API_BASE_URL: z.url(),
+      AUTH_ALLOWED_EMAILS: z.string().optional(),
+      AUTH_GOOGLE_ALLOWED_DOMAIN: z.string().min(1).optional(),
+      AUTH_GOOGLE_ID: z.string().min(1),
+      AUTH_GOOGLE_SECRET: z.string().min(1),
+      AUTH_SECRET: z.string().min(32),
+      CRON_SECRET: z.string().min(32),
+      WEB_BASE_URL: z.url()
+    })
+  )
+  .refine(
+    (environment) =>
+      Boolean(environment.AUTH_GOOGLE_ALLOWED_DOMAIN) ||
+      Boolean(environment.AUTH_ALLOWED_EMAILS),
+    "Configure an allowed Google domain or explicit email allowlist"
+  );
+
+export type ApiEnvironment = z.infer<typeof apiEnvironmentSchema>;
+export type WebEnvironment = z.infer<typeof webEnvironmentSchema>;
+
+export function parseApiEnvironment(
+  environment: Readonly<Record<string, string | undefined>>
+): ApiEnvironment {
+  return apiEnvironmentSchema.parse(environment);
+}
+
+export function parseWebEnvironment(
+  environment: Readonly<Record<string, string | undefined>>
+): WebEnvironment {
+  return webEnvironmentSchema.parse(environment);
+}

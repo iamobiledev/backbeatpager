@@ -53,6 +53,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@backbeat/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@backbeat/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -108,6 +111,9 @@ importers:
       '@auth/prisma-adapter':
         specifier: ^2.11.2
         version: 2.11.2(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(magicast@0.5.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3))
+      '@backbeat/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@backbeat/db':
         specifier: workspace:*
         version: link:../../packages/db

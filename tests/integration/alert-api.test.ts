@@ -385,7 +385,7 @@ describeDatabase("alert ingestion API", () => {
 
     const reconciled = await app.inject({
       headers: { authorization: "Bearer test-cron-secret" },
-      method: "POST",
+      method: "GET",
       url: "/internal/reconcile"
     });
     expect(reconciled.statusCode).toBe(200);

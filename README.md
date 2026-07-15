@@ -4,9 +4,9 @@ Backbeat Pager is a Slack-first, single-organization on-call and incident
 management service. It is designed as a lightweight PagerDuty replacement for
 internal engineering teams.
 
-> **Current delivery:** Phase 5 adds a Google-authenticated administration
-> console with role-aware CRUD, visual schedules, incident timelines, channel
-> settings, and audited configuration changes.
+> **Current delivery:** All six phases are implemented: durable on-call and
+> escalation, Slack-first incident operations, authenticated administration,
+> handoffs, weekly digests, analytics, and production runbooks.
 
 ## Architecture
 
@@ -350,6 +350,49 @@ Slack view hashes are used for optimistic publication. Incident actions, manual
 triggers, resolution, reassignment, and override creation refresh the acting
 user's Home view.
 
+## Handoffs, digests, and analytics
+
+- Every active schedule with team handoffs enabled has a durable Workflow
+  sleeping until its next real resolver change. It posts incoming/outgoing Slack
+  mentions once, including override and restriction boundaries.
+- Every digest-enabled team has a durable weekly Workflow pinned to its local
+  weekday/time. Digests include count, open/resolved, MTTA, MTTR, alert noise,
+  and the noisiest service.
+- The web Analytics page provides 7/30/90-day team filters, incident trend,
+  severity mix, MTTA, MTTR, alerts per incident, and service noise.
+
+MTTA is opening to first acknowledgement. MTTR is opening to resolution.
+Incomplete incidents are excluded from the corresponding average and retained
+in explicit open/total counts.
+
+## Production environment
+
+| Variable                               | Project    | Purpose                                       |
+| -------------------------------------- | ---------- | --------------------------------------------- |
+| `DATABASE_URL`                         | API + web  | Neon pooled runtime URL                       |
+| `DIRECT_URL`                           | release/CI | Neon direct migration URL                     |
+| `API_BASE_URL`                         | API + web  | Canonical production API origin               |
+| `WEB_BASE_URL`                         | API + web  | Canonical administration origin               |
+| `WORKFLOW_INTERNAL_SECRET`             | API        | Signs Workflow step callbacks                 |
+| `CRON_SECRET`                          | API + web  | Signs reconciliation and web-triggered repair |
+| `SLACK_BOT_TOKEN`                      | API        | Single-organization bot token                 |
+| `SLACK_SIGNING_SECRET`                 | API        | Verifies Slack HTTP requests                  |
+| `SLACK_ACTION_SECRET`                  | API        | Signs incident button values                  |
+| `RESEND_API_KEY`, `EMAIL_FROM`         | API        | Optional email delivery                       |
+| `AUTH_SECRET`                          | web        | Auth.js session protection                    |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | web        | Google OAuth                                  |
+| `AUTH_GOOGLE_ALLOWED_DOMAIN`           | web        | Workspace admission policy                    |
+
+When `VERCEL_ENV=production`, both applications validate required environment
+contracts during startup. `SLACK_REQUIRED=true` makes incomplete Slack
+configuration fatal.
+
+See [operations and deployment](docs/operations.md) for release order, preview
+branches, health checks, Workflow recovery, Neon PITR/snapshots, rollback,
+secret rotation, and the production smoke checklist. See
+[incident semantics](docs/incident-semantics.md) for lifecycle, escalation,
+snooze, timezone/DST, override, handoff, and metric definitions.
+
 ## Data-model safety
 
 The database migration enforces important invariants independently of the
@@ -369,8 +412,9 @@ Only a short lookup prefix and the one-way hash are persisted.
 ## CI
 
 GitHub Actions starts PostgreSQL 16, applies the migration, seeds twice-safe demo
-data, validates constraints, runs formatting/lint/typecheck/tests/builds, and
-validates the Compose configuration.
+data, validates constraints, runs formatting/lint/typecheck/tests/builds,
+executes the Playwright admin setup/responder/accessibility flow, and validates
+the Compose configuration.
 
 ## License
 

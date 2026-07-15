@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { parseApiEnvironment } from "@backbeat/config";
 import { getPrismaClient } from "@backbeat/db";
 
 import { buildApp } from "./app.js";
@@ -7,6 +8,10 @@ import { createSlackBoltRuntimeFromEnvironment } from "./slack/bolt-runtime.js";
 import { createNotificationDeliveryFromEnvironment } from "./slack/notification-runtime.js";
 import { vercelCommunicationWorkflowStarter } from "./workflows/communications.js";
 import { vercelIncidentWorkflowStarter } from "./workflows/incident-generation.js";
+
+if (process.env.VERCEL_ENV === "production") {
+  parseApiEnvironment(process.env);
+}
 
 const prisma = getPrismaClient();
 const notificationDelivery = createNotificationDeliveryFromEnvironment();

@@ -1,9 +1,14 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { parseWebEnvironment } from "@backbeat/config";
 import { getPrismaClient } from "@backbeat/db";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
 import { emailIsAllowed } from "@/lib/auth-policy";
+
+if (process.env.VERCEL_ENV === "production") {
+  parseWebEnvironment(process.env);
+}
 
 const prisma = getPrismaClient();
 
