@@ -1,11 +1,14 @@
 import type { PrismaClient } from "@backbeat/db";
 import {
+  reconcileCommunicationWorkflows,
   reconcileIncidentWorkflows,
+  type CommunicationWorkflowStarter,
   type IncidentWorkflowStarter
 } from "@backbeat/workflows";
 import type { FastifyInstance } from "fastify";
 
 export interface ReconciliationRouteDependencies {
+  communicationStarter?: CommunicationWorkflowStarter;
   prisma: PrismaClient;
   workflowStarter: IncidentWorkflowStarter;
 }
@@ -35,10 +38,25 @@ export function registerReconciliationRoute(
       });
     }
 
-    const result = await reconcileIncidentWorkflows(
-      dependencies.prisma,
-      dependencies.workflowStarter
-    );
-    return reply.send({ result, status: "success" });
+    const [incidents, communications] = await Promise.all([
+      reconcileIncidentWorkflows(
+        dependencies.prisma,
+        dependencies.workflowStarter
+      ),
+      dependencies.communicationStarter
+        ? reconcileCommunicationWorkflows(
+            dependencies.prisma,
+            dependencies.communicationStarter
+          )
+        : Promise.resolve({
+            digestsStarted: 0,
+            failed: 0,
+            handoffsStarted: 0
+          })
+    ]);
+    return reply.send({
+      result: { communications, incidents },
+      status: "success"
+    });
   });
 }

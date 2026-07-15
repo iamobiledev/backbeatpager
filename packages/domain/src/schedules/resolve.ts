@@ -163,6 +163,36 @@ export function localHandoffToDate(
   );
 }
 
+export function nextWeeklyLocalTime(
+  timezone: string,
+  dayOfWeek: number,
+  localTime: string,
+  after: Date
+): Date {
+  if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
+    throw new Error("Weekly day must be between Sunday (0) and Saturday (6)");
+  }
+
+  const local = toInstant(after).toZonedDateTimeISO(timezone);
+  const currentDay = localDayOfWeek(local.toPlainDate());
+  const daysAhead = positiveModulo(dayOfWeek - currentDay, 7);
+  let date = local.toPlainDate().add({ days: daysAhead });
+  let instant = localDateTimeToInstant(
+    date,
+    Temporal.PlainTime.from(localTime),
+    timezone
+  );
+  if (Temporal.Instant.compare(instant, toInstant(after)) <= 0) {
+    date = date.add({ days: 7 });
+    instant = localDateTimeToInstant(
+      date,
+      Temporal.PlainTime.from(localTime),
+      timezone
+    );
+  }
+  return toDate(instant);
+}
+
 function isLayerActive(layer: ScheduleLayerSnapshot, at: Date): boolean {
   return (
     (!layer.activeFrom || layer.activeFrom.getTime() <= at.getTime()) &&

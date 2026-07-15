@@ -250,6 +250,9 @@ importers:
       '@backbeat/domain':
         specifier: workspace:*
         version: link:../domain
+      '@backbeat/notifications':
+        specifier: workspace:*
+        version: link:../notifications
 
 packages:
 

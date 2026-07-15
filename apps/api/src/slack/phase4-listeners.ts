@@ -3,7 +3,11 @@ import { randomUUID } from "node:crypto";
 import { ActorKind, Severity, type PrismaClient } from "@backbeat/db";
 import { triggerIncident } from "@backbeat/domain";
 import { createSlackActionToken } from "@backbeat/notifications";
-import { dispatchIncidentWorkflow } from "@backbeat/workflows";
+import {
+  dispatchHandoffWorkflow,
+  dispatchIncidentWorkflow,
+  type CommunicationWorkflowStarter
+} from "@backbeat/workflows";
 import type { App } from "@slack/bolt";
 import type { HomeView } from "@slack/types";
 
@@ -75,6 +79,7 @@ export interface SlackViewClient extends SlackActorClient {
 }
 
 export interface Phase4Dependencies extends SlackActionDependencies {
+  communicationStarter?: CommunicationWorkflowStarter;
   webBaseUrl?: string;
 }
 
@@ -197,16 +202,23 @@ export async function createOnCallOverride(
   if (!schedule) throw new Error("Schedule is not available to this user");
   if (!replacement) throw new Error("Replacement user is not active");
 
-  return prisma.scheduleOverride.create({
-    data: {
-      createdById: input.createdById,
-      endsAt: input.endsAt,
-      ...(input.reason ? { reason: input.reason } : {}),
-      replacedUserId: input.createdById,
-      replacementUserId: replacement.id,
-      scheduleId: schedule.id,
-      startsAt: input.startsAt
-    }
+  return prisma.$transaction(async (transaction) => {
+    const created = await transaction.scheduleOverride.create({
+      data: {
+        createdById: input.createdById,
+        endsAt: input.endsAt,
+        ...(input.reason ? { reason: input.reason } : {}),
+        replacedUserId: input.createdById,
+        replacementUserId: replacement.id,
+        scheduleId: schedule.id,
+        startsAt: input.startsAt
+      }
+    });
+    await transaction.schedule.update({
+      where: { id: schedule.id },
+      data: { updatedAt: new Date() }
+    });
+    return created;
   });
 }
 
@@ -589,6 +601,21 @@ export function registerPhase4Listeners(
       await completeViewSubmission(dependencies.prisma, receiptKey, {
         overrideId: created.id
       });
+      if (dependencies.communicationStarter) {
+        const updatedSchedule =
+          await dependencies.prisma.schedule.findUniqueOrThrow({
+            where: { id: scheduleId },
+            select: { updatedAt: true }
+          });
+        await dispatchHandoffWorkflow(
+          dependencies.prisma,
+          dependencies.communicationStarter,
+          {
+            generation: Math.floor(updatedSchedule.updatedAt.getTime() / 1000),
+            scheduleId
+          }
+        );
+      }
       await publishAppHomeForSlackUser(
         dependencies.prisma,
         client,

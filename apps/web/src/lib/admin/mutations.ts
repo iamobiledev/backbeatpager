@@ -510,6 +510,10 @@ export async function createScheduleOverride(
         startsAt: input.startsAt
       }
     });
+    await transaction.schedule.update({
+      where: { id: input.scheduleId },
+      data: { updatedAt: new Date() }
+    });
     await audit(
       transaction,
       actor.id,
@@ -534,7 +538,15 @@ export async function deleteScheduleOverride(
   assertAdministrator(actor);
   await prisma.$transaction(async (transaction) => {
     const id = z.uuid().parse(overrideId);
+    const override = await transaction.scheduleOverride.findUniqueOrThrow({
+      where: { id },
+      select: { scheduleId: true }
+    });
     await transaction.scheduleOverride.delete({ where: { id } });
+    await transaction.schedule.update({
+      where: { id: override.scheduleId },
+      data: { updatedAt: new Date() }
+    });
     await audit(transaction, actor.id, "DELETE", "ScheduleOverride", id, {});
   });
 }

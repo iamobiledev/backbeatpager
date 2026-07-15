@@ -23,3 +23,18 @@ export type {
 } from "./dispatch.js";
 export { evaluateIncidentWake } from "./incident-engine.js";
 export type { IncidentWakeResult } from "./incident-engine.js";
+export {
+  dispatchDigestWorkflow,
+  dispatchHandoffWorkflow,
+  processDigestWake,
+  processHandoffWake,
+  reconcileCommunicationWorkflows
+} from "./communication.js";
+export type {
+  CommunicationDeliveryDependencies,
+  CommunicationReconciliationResult,
+  CommunicationWakeResult,
+  CommunicationWorkflowStarter,
+  DigestWorkflowInput,
+  HandoffWorkflowInput
+} from "./communication.js";

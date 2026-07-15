@@ -1,6 +1,7 @@
 import helmet from "@fastify/helmet";
 import { DomainError } from "@backbeat/domain";
 import type { NotificationDeliveryDependencies } from "@backbeat/notifications";
+import type { CommunicationWorkflowStarter } from "@backbeat/workflows";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import {
@@ -15,6 +16,7 @@ import type { SlackBoltRuntime } from "./slack/bolt-runtime.js";
 
 export interface BuildAppOptions {
   alertRoutes?: AlertRouteDependencies;
+  communicationStarter?: CommunicationWorkflowStarter;
   notificationDelivery?: NotificationDeliveryDependencies;
   slackRuntime?: SlackBoltRuntime;
 }
@@ -76,7 +78,12 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   if (alertRoutes) {
     void app.register((scope, _options, done) => {
       registerAlertRoutes(scope, alertRoutes);
-      registerReconciliationRoute(scope, alertRoutes);
+      registerReconciliationRoute(scope, {
+        ...alertRoutes,
+        ...(options.communicationStarter
+          ? { communicationStarter: options.communicationStarter }
+          : {})
+      });
       registerWorkflowRuntimeRoutes(scope, {
         ...alertRoutes,
         ...(options.notificationDelivery

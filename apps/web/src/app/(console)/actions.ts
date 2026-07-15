@@ -192,6 +192,7 @@ export async function updateUserAction(form: FormData): Promise<void> {
 export async function createTeamAction(form: FormData): Promise<void> {
   const actor = await requireAdmin();
   await createTeam(getPrismaClient(), adminActor(actor), teamInput(form));
+  await requestWorkflowReconciliation();
   revalidatePath("/teams");
 }
 
@@ -203,6 +204,7 @@ export async function updateTeamAction(form: FormData): Promise<void> {
     value(form, "id"),
     teamInput(form)
   );
+  await requestWorkflowReconciliation();
   revalidatePath("/teams");
 }
 
@@ -213,6 +215,7 @@ export async function createScheduleAction(form: FormData): Promise<void> {
     adminActor(actor),
     scheduleInput(form)
   );
+  await requestWorkflowReconciliation();
   revalidatePath("/schedules");
 }
 
@@ -224,6 +227,7 @@ export async function updateScheduleAction(form: FormData): Promise<void> {
     value(form, "id"),
     scheduleInput(form)
   );
+  await requestWorkflowReconciliation();
   revalidatePath("/schedules");
 }
 
@@ -237,6 +241,7 @@ export async function createOverrideAction(form: FormData): Promise<void> {
     scheduleId: value(form, "scheduleId"),
     startsAt: new Date(value(form, "startsAt"))
   });
+  await requestWorkflowReconciliation();
   revalidatePath("/schedules");
 }
 
@@ -247,6 +252,7 @@ export async function deleteOverrideAction(form: FormData): Promise<void> {
     adminActor(actor),
     value(form, "id")
   );
+  await requestWorkflowReconciliation();
   revalidatePath("/schedules");
 }
 
@@ -405,5 +411,6 @@ export async function updateChannelsAction(form: FormData): Promise<void> {
     services,
     teams
   });
+  await requestWorkflowReconciliation();
   revalidatePath("/settings");
 }

@@ -3,6 +3,7 @@ export {
   listShifts,
   localDateTimeToInstant,
   localHandoffToDate,
+  nextWeeklyLocalTime,
   resolveLayerAt,
   resolveScheduleAt
 } from "./schedules/resolve.js";

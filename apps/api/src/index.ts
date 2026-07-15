@@ -5,12 +5,14 @@ import { getPrismaClient } from "@backbeat/db";
 import { buildApp } from "./app.js";
 import { createSlackBoltRuntimeFromEnvironment } from "./slack/bolt-runtime.js";
 import { createNotificationDeliveryFromEnvironment } from "./slack/notification-runtime.js";
+import { vercelCommunicationWorkflowStarter } from "./workflows/communications.js";
 import { vercelIncidentWorkflowStarter } from "./workflows/incident-generation.js";
 
 const prisma = getPrismaClient();
 const notificationDelivery = createNotificationDeliveryFromEnvironment();
 const slackRuntime = createSlackBoltRuntimeFromEnvironment(
   {
+    communicationStarter: vercelCommunicationWorkflowStarter,
     prisma,
     workflowStarter: vercelIncidentWorkflowStarter
   },
@@ -21,6 +23,7 @@ const app = buildApp({
     prisma,
     workflowStarter: vercelIncidentWorkflowStarter
   },
+  communicationStarter: vercelCommunicationWorkflowStarter,
   ...(notificationDelivery ? { notificationDelivery } : {}),
   ...(slackRuntime ? { slackRuntime } : {})
 });

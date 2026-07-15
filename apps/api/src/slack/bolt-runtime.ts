@@ -10,14 +10,11 @@ import {
   type VercelHandler
 } from "@vercel/slack-bolt";
 
-import {
-  processSlackIncidentAction,
-  SlackActionError,
-  type SlackActionDependencies
-} from "./actions.js";
+import { processSlackIncidentAction, SlackActionError } from "./actions.js";
 import {
   publishAppHomeForSlackUser,
-  registerPhase4Listeners
+  registerPhase4Listeners,
+  type Phase4Dependencies
 } from "./phase4-listeners.js";
 
 export interface SlackBoltRuntime {
@@ -79,7 +76,7 @@ export function createSlackBoltRuntime(
     botToken: string;
     signingSecret: string;
     webBaseUrl?: string;
-  } & SlackActionDependencies
+  } & Phase4Dependencies
 ): SlackBoltRuntime {
   const receiver = new VercelReceiver({
     ackTimeoutMs: 2_500,
@@ -226,7 +223,7 @@ export function createSlackBoltRuntime(
 }
 
 export function createSlackBoltRuntimeFromEnvironment(
-  dependencies: Omit<SlackActionDependencies, "actionSecret">,
+  dependencies: Omit<Phase4Dependencies, "actionSecret" | "webBaseUrl">,
   options: { required?: boolean } = {}
 ): SlackBoltRuntime | undefined {
   const botToken = process.env.SLACK_BOT_TOKEN;

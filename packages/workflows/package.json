@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@backbeat/db": "workspace:*",
-    "@backbeat/domain": "workspace:*"
+    "@backbeat/domain": "workspace:*",
+    "@backbeat/notifications": "workspace:*"
   }
 }
