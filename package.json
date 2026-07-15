@@ -1,0 +1,36 @@
+{
+  "name": "backbeatpager",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "dev": "pnpm --parallel --filter @backbeat/api --filter @backbeat/web dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "db:generate": "pnpm --filter @backbeat/db db:generate",
+    "db:migrate:deploy": "pnpm --filter @backbeat/db db:migrate:deploy",
+    "db:migrate:dev": "pnpm --filter @backbeat/db db:migrate:dev",
+    "db:reset": "pnpm --filter @backbeat/db db:reset",
+    "db:seed": "pnpm --filter @backbeat/db db:seed"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.5",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "tsx": "^4.23.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^4.1.10"
+  }
+}
