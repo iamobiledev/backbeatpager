@@ -73,5 +73,15 @@ jobs:
       - name: Build applications and packages
         run: pnpm build
 
+      - name: Test administration browser flows
+        env:
+          AUTH_GOOGLE_ALLOWED_DOMAIN: example.com
+          AUTH_SECRET: ci-auth-secret-that-is-longer-than-thirty-two-bytes
+          AUTH_TEST_USER_EMAIL: admin@example.com
+          E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/backbeatpager_test
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3104
+          PLAYWRIGHT_START_SERVER: "true"
+        run: pnpm db:seed && pnpm test:e2e
+
       - name: Validate Compose configuration
         run: docker compose config --quiet
