@@ -46,3 +46,9 @@ export type {
   EscalationStepDefinition
 } from "./escalation/cursor.js";
 export { expandEscalationTargets } from "./escalation/targets.js";
+export { getIncidentAnalytics } from "./analytics.js";
+export type {
+  AnalyticsQuery,
+  IncidentAnalytics,
+  ServiceAnalytics
+} from "./analytics.js";

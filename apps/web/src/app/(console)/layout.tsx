@@ -1,6 +1,7 @@
 import {
   Activity,
   AlarmClock,
+  BarChart3,
   BellRing,
   Blocks,
   Gauge,
@@ -20,6 +21,7 @@ import { requireActor } from "@/lib/authz";
 const navigation = [
   { href: "/", icon: Gauge, label: "Dashboard" },
   { href: "/incidents", icon: BellRing, label: "Incidents" },
+  { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/schedules", icon: AlarmClock, label: "Schedules" },
   { href: "/services", icon: Blocks, label: "Services" },
   { href: "/policies", icon: Workflow, label: "Policies" },
